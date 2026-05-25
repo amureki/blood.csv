@@ -1,0 +1,19 @@
+# Personal/local health data
+/data/
+/extracted/
+/ocr/
+/ocr_pages/
+/blood-tests.md
+
+# Source PDFs/images or exports that may be added locally
+*.pdf
+*.png
+*.jpg
+*.jpeg
+*.heic
+*.tiff
+*.csv
+*.tsv
+
+# OS/editor noise
+.DS_Store

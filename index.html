@@ -1,0 +1,455 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Blood test trends</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: Canvas; --fg: CanvasText; --muted: color-mix(in srgb, CanvasText 55%, transparent);
+    --line: color-mix(in srgb, CanvasText 16%, transparent); --soft: color-mix(in srgb, CanvasText 6%, transparent);
+    --accent:#2563eb; --bad:#b00020; --ok:#137333; --warn:#b26a00;
+    --measure: 1180px;
+  }
+  * { box-sizing: border-box; }
+  html, body { max-width: 100%; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.45 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; overflow-wrap: anywhere; }
+  .pageHeader { border-bottom: 1px solid var(--line); }
+  main, .bar, .shell { width: 100%; max-width: var(--measure); min-width: 0; margin: 0 auto; padding: 18px 22px; }
+  .shell { display:grid; grid-template-columns: 280px minmax(0, 1fr); gap: 24px; align-items:start; }
+  h1 { margin: 0; font-size: clamp(24px, 3vw, 34px); letter-spacing: -0.035em; line-height: 1; }
+  h2 { margin: 20px 0 10px; font-size: 18px; letter-spacing: -0.015em; }
+  .sub { color: var(--muted); margin: 8px 0 0; max-width: 72ch; }
+  .sidebar { position: sticky; top: 16px; align-self:start; border:1px solid var(--line); border-radius:16px; padding:14px; background: color-mix(in srgb, Canvas 96%, CanvasText 4%); }
+  .sidebar h2 { margin:0 0 12px; font-size:15px; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; }
+  .controls { display: grid; gap: 12px; align-items: end; min-width: 0; }
+  label { display: grid; gap: 4px; font-size: 13px; color: var(--muted); font-weight: 600; min-width: 0; }
+  select, input { font: inherit; color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 9px 10px; min-height: 42px; min-width: 0; max-width: 100%; }
+  .check { display:flex; gap:8px; align-items:center; min-height:42px; color: var(--fg); font-size: 14px; min-width:0; }
+  .check input { min-height: auto; }
+  .chips { display:grid; gap:10px; margin: 14px 0 0; padding-top: 12px; border-top: 1px solid var(--line); }
+  .chipGroup { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+  .chipGroupTitle { flex: 0 0 100%; color: var(--muted); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; margin-top:2px; }
+  button.chip { border: 1px solid var(--line); background: var(--soft); color: var(--fg); border-radius: 999px; padding: 7px 11px; font: 600 14px/1 system-ui; cursor: pointer; }
+  button.chip:hover, button.chip.active { border-color: var(--accent); color: var(--accent); }
+  .content { min-width:0; }
+  .layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; min-width: 0; }
+  #dashboard { display: block; }
+  .groupSection { margin-top: 18px; }
+  .groupSection h3 { margin: 0 0 8px; font-size: 15px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+  .trendList { display:grid; gap:6px; margin-top:8px; }
+  .trendItem { display:grid; grid-template-columns:minmax(160px,1fr) auto minmax(120px,auto) auto; gap:10px; align-items:baseline; padding:7px 10px; border:1px solid var(--line); border-radius:10px; background:var(--soft); cursor:pointer; }
+  .trendItem:hover, .trendItem:focus { border-color: var(--accent); outline:none; }
+  .trendItem strong { font-size:14px; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .trendItem .value { font-weight:720; font-variant-numeric:tabular-nums; }
+  .trendItem .change, .trendItem small { color:var(--muted); text-align:right; }
+  @media (max-width: 620px) { .trendItem { grid-template-columns:1fr auto; } .trendItem .change, .trendItem small { grid-column:1 / -1; text-align:left; } }
+  .panel { border: 1px solid var(--line); border-radius: 16px; background: color-mix(in srgb, Canvas 96%, CanvasText 4%); min-width: 0; }
+  .panel { padding: 14px; }
+  .hero { border-color: color-mix(in srgb, var(--accent) 25%, var(--line)); }
+  .panel header { position: static; backdrop-filter:none; background:transparent; border:0; display:flex; justify-content:space-between; gap:12px; align-items:baseline; padding:0 0 8px; min-width:0; }
+  .panel h3 { margin:0; font-size: 16px; letter-spacing: -0.01em; }
+  .unit { color: var(--muted); font-size: 13px; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .heroMeta { display:flex; flex-wrap:wrap; gap:6px 10px; margin:4px 0 8px; color:var(--muted); font-size:14px; align-items:baseline; }
+  .heroMeta strong { color:var(--fg); font-size:18px; font-variant-numeric:tabular-nums; }
+  .heroMeta .high { color:var(--bad); font-weight:700; }
+  .high { color: var(--bad); font-weight: 700; }
+  .warn { color: var(--warn); font-weight: 700; }
+  .badge { display:inline-block; border-radius:999px; padding:2px 7px; font-size:12px; font-weight:700; background:var(--soft); color:var(--muted); vertical-align:middle; }
+  .badge.high { background: color-mix(in srgb, var(--bad) 12%, transparent); color: var(--bad); }
+  .delta { color: var(--muted); font-variant-numeric: tabular-nums; }
+  svg { width: 100%; max-width: 100%; height: 250px; display:block; overflow: hidden; }
+  svg text { font-variant-numeric: tabular-nums; }
+  .hero svg { height: 300px; }
+  .note { color: var(--muted); font-size: 13px; margin-top: 6px; }
+  .help { margin-top: 10px; padding: 10px 12px; border-radius: 12px; background: var(--soft); color: var(--muted); font-size: 14px; }
+  .help summary { cursor:pointer; color: var(--fg); font-weight:700; }
+  .help strong { color: var(--fg); }
+
+  .summaryLine { color: var(--muted); font-size: 14px; line-height: 1.5; }
+  .summaryLine strong { color: var(--fg); }
+  .attentionList { display:grid; gap:6px; }
+  .attentionItem { display:grid; grid-template-columns:minmax(120px,1fr) auto minmax(120px,auto); gap:10px; align-items:baseline; padding:7px 10px; border:1px solid var(--line); border-radius:10px; background:var(--soft); cursor:pointer; }
+  .attentionItem:hover, .attentionItem:focus { border-color: var(--accent); outline: none; }
+  .attentionItem strong { font-size:14px; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .attentionItem .value { font-weight:720; color:var(--bad); font-variant-numeric:tabular-nums; }
+  .attentionItem small { color:var(--muted); text-align:right; }
+  @media (max-width: 520px) { .attentionItem { grid-template-columns:1fr auto; } .attentionItem small { grid-column:1 / -1; text-align:left; } }
+  .tableWrap { max-width: 100%; overflow:auto; border: 1px solid var(--line); border-radius: 16px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { border-bottom: 1px solid var(--line); padding: 8px 10px; text-align: left; vertical-align: top; }
+  th { position: sticky; top: 0; background: Canvas; font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+  tr:hover td { background: var(--soft); }
+  code { background: var(--soft); padding: 1px 5px; border-radius: 5px; }
+  @media (max-width: 900px) { .shell { grid-template-columns: 1fr; gap: 12px; } .sidebar { position: static; } .chips { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); } }
+  @media (max-width: 760px) { main,.bar,.shell{padding:16px;} .hero svg{height:260px;} }
+  @media (max-width: 430px) { body{font-size:15px;} main,.bar,.shell{padding:14px 12px;} .chips{gap:8px;} button.chip{font-size:13px; padding:7px 9px;} .hero svg{height:240px;} svg{height:220px;} }
+</style>
+</head>
+<body>
+<header class="pageHeader">
+  <div class="bar">
+    <h1>Blood test trends</h1>
+    <p class="sub">Private local viewer. Triage first, details below. No server, no dependencies.</p>
+  </div>
+</header>
+
+<div class="shell">
+  <aside class="sidebar">
+    <h2>Navigate</h2>
+    <div class="controls">
+      <label>Jump to analyte <select id="analyte"></select></label>
+      <label class="check"><input id="useDefaults" type="checkbox" checked> show guideline lines</label>
+    </div>
+    <nav class="chips" id="chips" aria-label="Quick analyte jumps"></nav>
+  </aside>
+
+  <main class="content">
+  <section class="layout">
+    <div class="panel hero">
+      <header><h3 id="heroTitle">Selected analyte</h3><span class="unit" id="chartNote"></span></header>
+      <div class="heroMeta" id="selectedStats"></div>
+      <svg id="chart" viewBox="0 0 900 340" role="img" aria-label="selected analyte trend chart"></svg>
+      <details class="help" id="analyteHelp"></details>
+    </div>
+
+    <div class="panel">
+      <header><h3>Summary</h3><span class="unit">What changed / what matters</span></header>
+      <div id="globalHighlights"></div>
+    </div>
+
+    <section>
+      <h2>Currently flagged</h2>
+      <div class="attentionList" id="attentionCards"></div>
+    </section>
+
+    <section>
+      <h2>Grouped trends</h2>
+      <div class="dashboard" id="dashboard"></div>
+    </section>
+
+    <section>
+      <details>
+        <summary><h2 style="display:inline">Reports</h2></summary>
+        <p class="note">One row per report/date. Use this as the audit trail; charts are the main UI.</p>
+        <div class="tableWrap"><table id="reportsTable"></table></div>
+      </details>
+      <details style="margin-top:12px">
+        <summary class="note" style="cursor:pointer">Raw parsed rows</summary>
+        <div class="tableWrap" style="margin-top:8px"><table id="table"></table></div>
+      </details>
+    </section>
+  </section>
+  </main>
+</div>
+
+<script id="csv" type="text/plain">
+date,source_date,source_file,source_type,lab,analyte,original_name,value,unit,ref_low,ref_high,ref_text,flag,notes
+</script>
+<script id="baselines" type="text/plain">
+analyte,unit,low,high,target,source,note
+LDL,mg/dl,,116,<116,ESC/EAS low-risk target,Target depends on overall cardiovascular risk
+Non-HDL,mg/dl,,146,<146,ESC/EAS low-risk target,Often used alongside LDL
+Total cholesterol,mg/dl,,200,<200,Common adult reference,Broad screening threshold
+Triglycerides,mg/dl,,150,<150,Common fasting target,Non-fasting values can be higher
+HDL,mg/dl,40,,>40,Common male target,Interpreted as part of the lipid profile
+ALT,U/l,,50,<50,Common adult male reference,Lab-specific; some labs use lower upper limits
+AST,U/l,,50,<50,Common adult reference,Lab-specific
+Gamma-GT,U/l,8,61,8-61,Common adult male reference,Lab-specific
+Creatinine,mg/dl,0.70,1.20,0.70-1.20,Common adult male reference,"Interpret with eGFR, muscle mass, hydration"
+eGFR,ml/min/1.73m2,60,,>60,CKD-EPI reporting convention,Repeated results and urine findings matter
+Creatine kinase (CK),U/l,,190,<190,Common reference,Recent strenuous exercise can temporarily raise CK
+Glucose,mg/dl,60,110,60-110,Common fasting reference,Diagnostic thresholds depend on fasting status and method
+Uric acid,mg/dl,3.4,7.0,3.4-7.0,Common adult male reference,Target can be lower in gout
+Ferritin,ng/ml,30,400,30-400,Common adult male reference,Reflects iron stores and can rise with inflammation
+TSH,µU/ml,0.40,4.00,0.40-4.00,Common adult reference,Lab/clinical context matters
+BMI,kg/m2,18.5,25.0,18.5-25.0,WHO adult category,Not a blood marker; rough population measure
+</script>
+<script>
+const csvText = document.getElementById('csv').textContent.trim();
+const groups = {
+  'Lipids / cardiovascular': ['LDL','HDL','Triglycerides','Non-HDL','Total cholesterol'],
+  'Liver': ['ALT','AST','Gamma-GT','LDH'],
+  'Kidney / metabolism': ['eGFR','Creatinine','Urea','Uric acid'],
+  'Blood count': ['White blood cells (WBC)','Red blood cells (RBC)','Hemoglobin','Hematocrit','MCV','MCH','MCHC','RDW','Platelets'],
+  'Electrolytes': ['Sodium','Potassium'],
+  'Thyroid': ['TSH'],
+  'Iron': ['Ferritin'],
+  'Glucose': ['Glucose'],
+  'Body': ['Weight','Height','BMI'],
+  'Muscle': ['Creatine kinase (CK)'],
+};
+const quickGroups = {
+  'Lipids': ['LDL','HDL','Triglycerides','Non-HDL','Total cholesterol'],
+  'Liver': ['ALT','AST','Gamma-GT'],
+  'Kidney': ['Creatinine','eGFR'],
+  'Other': ['Creatine kinase (CK)','TSH','Ferritin'],
+};
+const dashboardGroups = ['Lipids / cardiovascular', 'Liver', 'Kidney / metabolism', 'Blood count'];
+const displayPriority = [
+  'LDL','HDL','Triglycerides','Non-HDL','Total cholesterol',
+  'ALT','AST','Gamma-GT','LDH',
+  'eGFR','Creatinine','Urea','Uric acid',
+  'Creatine kinase (CK)','Glucose','TSH','Ferritin',
+  'White blood cells (WBC)','Red blood cells (RBC)','Hemoglobin','Hematocrit','MCV','MCH','MCHC','RDW','Platelets',
+  'Sodium','Potassium','BMI','Weight','Height'
+];
+const priorityRank = Object.fromEntries(displayPriority.map((a,i)=>[a,i]));
+const trendDirection = {
+  'LDL':'lowerBetter', 'Non-HDL':'lowerBetter', 'Total cholesterol':'lowerBetter', 'Triglycerides':'lowerBetter',
+  'ALT':'lowerBetter', 'AST':'lowerBetter', 'Gamma-GT':'lowerBetter', 'Creatine kinase (CK)':'lowerBetter', 'Glucose':'lowerBetter', 'Uric acid':'lowerBetter',
+  'eGFR':'higherBetter', 'HDL':'higherUsuallyBetter',
+  'TSH':'range', 'Creatinine':'range', 'Hemoglobin':'range', 'White blood cells (WBC)':'range', 'Platelets':'range'
+};
+const helpText = {
+  'LDL': 'LDL cholesterol is a key marker used to estimate and lower cardiovascular risk.',
+  'Non-HDL': 'Non-HDL cholesterol includes LDL and other cholesterol particles linked with cardiovascular risk.',
+  'HDL': 'HDL cholesterol is one part of the cholesterol profile and is interpreted with LDL, non-HDL, and triglycerides.',
+  'Total cholesterol': 'Total cholesterol is a broad screening number; LDL and non-HDL usually guide risk decisions more directly.',
+  'Triglycerides': 'Triglycerides are blood fats that can vary with meals, alcohol, weight changes, and recent activity.',
+  'ALT': 'ALT is a liver enzyme. Mild changes are common and are interpreted with other liver tests and context.',
+  'AST': 'AST is an enzyme found in liver and muscle. Recent exercise can affect it.',
+  'Gamma-GT': 'Gamma-GT is a liver and bile-duct enzyme, often interpreted with ALT, AST, medications, and alcohol intake.',
+  'Creatinine': 'Creatinine is used to estimate kidney filtration and can vary with muscle mass and hydration.',
+  'eGFR': 'eGFR estimates kidney filtration from creatinine and is best interpreted as a trend.',
+  'Creatine kinase (CK)': 'Creatine kinase is a muscle enzyme that can rise temporarily after exercise or muscle strain.',
+  'Glucose': 'Glucose is blood sugar. Meaning depends on whether the sample was fasting and on the test method.',
+  'Uric acid': 'Uric acid is relevant to gout and kidney stone risk, especially when symptoms or history fit.',
+  'Ferritin': 'Ferritin reflects iron stores and can also change with inflammation or liver stress.',
+  'TSH': 'TSH is a thyroid screening test; follow-up often depends on free T4/T3 and symptoms.',
+  'BMI': 'BMI is a weight-to-height measure and does not separate muscle from body fat.',
+  'Sodium': 'Sodium is an electrolyte important for fluid balance and nerve/muscle function.',
+  'Potassium': 'Potassium is an electrolyte important for heart, nerve, and muscle function.',
+  'White blood cells (WBC)': 'White blood cells are part of the immune system and can vary with infections, inflammation, and stress.',
+  'Red blood cells (RBC)': 'Red blood cells carry oxygen through the body.',
+  'Hemoglobin': 'Hemoglobin is the oxygen-carrying protein in red blood cells.',
+  'Hematocrit': 'Hematocrit shows the proportion of blood made up by red blood cells.',
+  'Platelets': 'Platelets help blood clot.',
+  'MCV': 'MCV describes the average size of red blood cells.',
+  'MCH': 'MCH describes the average amount of hemoglobin in each red blood cell.',
+  'MCHC': 'MCHC describes the hemoglobin concentration inside red blood cells.',
+  'RDW': 'RDW shows how much red blood cell size varies.',
+  'Urea': 'Urea reflects protein metabolism and kidney handling; hydration can affect it.',
+  'LDH': 'LDH is an enzyme found in many tissues and is interpreted with symptoms and other tests.',
+};
+
+function parseCSV(s){
+  const rows=[]; let row=[], cell='', q=false;
+  for(let i=0;i<s.length;i++){
+    const c=s[i], n=s[i+1];
+    if(q){ if(c==='"' && n==='"'){cell+='"'; i++;} else if(c==='"') q=false; else cell+=c; }
+    else { if(c==='"') q=true; else if(c===','){row.push(cell); cell='';} else if(c==='\n'){row.push(cell); rows.push(row); row=[]; cell='';} else if(c!=='\r') cell+=c; }
+  }
+  row.push(cell); rows.push(row);
+  const head=rows.shift();
+  return rows.filter(r=>r.length && r.some(Boolean)).map(r=>Object.fromEntries(head.map((h,i)=>[h,r[i]??''])));
+}
+const data = parseCSV(csvText).map(r => ({...r, valueNum: Number(r.value), t: new Date(r.date+'T00:00:00')}));
+const baselineData = parseCSV(document.getElementById('baselines').textContent.trim());
+const baselines = Object.fromEntries(baselineData.map(b => [b.analyte, {...b, lowNum:Number(b.low), highNum:Number(b.high)}]));
+const analytes = [...new Set(data.map(r=>r.analyte))].sort((a,b)=>(priorityRank[a]??999)-(priorityRank[b]??999) || a.localeCompare(b));
+const sel = document.getElementById('analyte');
+for (const [group, names] of Object.entries(groups)) {
+  const present = names.filter(a => analytes.includes(a));
+  if (!present.length) continue;
+  const og = document.createElement('optgroup'); og.label = group;
+  for (const a of present) og.appendChild(new Option(`${a} (${data.filter(r=>r.analyte===a).length})`, a));
+  sel.appendChild(og);
+}
+const grouped = new Set(Object.values(groups).flat());
+const other = analytes.filter(a => !grouped.has(a));
+if (other.length) {
+  const og = document.createElement('optgroup'); og.label = 'Other';
+  for (const a of other) og.appendChild(new Option(`${a} (${data.filter(r=>r.analyte===a).length})`, a));
+  sel.appendChild(og);
+}
+sel.value = 'LDL';
+
+for (const [group, names] of Object.entries(quickGroups)) {
+  const present = names.filter(a => analytes.includes(a));
+  if (!present.length) continue;
+  const wrap = document.createElement('div'); wrap.className='chipGroup';
+  const title = document.createElement('div'); title.className='chipGroupTitle'; title.textContent=group;
+  wrap.appendChild(title);
+  for (const a of present) {
+    const b = document.createElement('button'); b.className='chip'; b.type='button'; b.textContent=a;
+    b.onclick = () => { sel.value=a; render(); document.querySelector('.hero')?.scrollIntoView({behavior:'smooth', block:'start'}); };
+    wrap.appendChild(b);
+  }
+  chips.appendChild(wrap);
+}
+
+useDefaults.onchange = render;
+sel.onchange = () => { render(); document.querySelector('.hero')?.scrollIntoView({behavior:'smooth', block:'start'}); };
+
+function rowsFor(analyte){
+  return data.filter(r => r.analyte===analyte).sort((a,b)=>a.t-b.t);
+}
+function fmt(r){ return `${r.value}${r.unit ? ' '+r.unit : ''}`; }
+function dateShort(s){ return s.slice(2); }
+function latestWithPrevious(){
+  return analytes.map(a => {
+    const rows = rowsFor(a);
+    return { analyte:a, rows, latest:rows.at(-1), prev:rows.at(-2) };
+  }).filter(x => x.latest);
+}
+function deltaText(latest, prev){
+  if(!prev) return `new · ${latest.date}`;
+  const d = latest.valueNum - prev.valueNum;
+  if(!Number.isFinite(d) || d === 0) return `no change · ${latest.date}`;
+  const sign = d > 0 ? '+' : '−';
+  return `${sign}${Math.abs(d).toLocaleString(undefined,{maximumFractionDigits:2})} since ${prev.date} · ${latest.date}`;
+}
+function trendWorsened(analyte, delta){
+  const dir = trendDirection[analyte];
+  if (!Number.isFinite(delta) || delta === 0) return false;
+  if (dir === 'lowerBetter') return delta > 0;
+  if (dir === 'higherBetter' || dir === 'higherUsuallyBetter') return delta < 0;
+  return false;
+}
+function statusText(r){
+  if (!r) return '—';
+  if (!r.flag) return 'Not flagged';
+  const ref = r.ref_text ? ` vs ${r.ref_text}` : '';
+  return `${r.flag}${ref}`;
+}
+function shortStatus(r){
+  if (!r?.flag) return 'Not flagged';
+  return [r.flag, r.ref_text].filter(Boolean).join(' · ');
+}
+function isAttention(x){ return !!x.latest.flag; }
+function byPriority(a,b){ return (priorityRank[a.analyte]??999)-(priorityRank[b.analyte]??999) || a.analyte.localeCompare(b.analyte); }
+function mkSvg(parent, viewBox='0 0 900 250'){
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); svg.setAttribute('viewBox', viewBox); parent.appendChild(svg); return svg;
+}
+function drawChart(svg, rows, opts={}){
+  svg.innerHTML='';
+  const W=900,H=opts.hero?340:250,L=58,R=22,T=24,B=42;
+  const mk=(name,attrs)=>{ const e=document.createElementNS('http://www.w3.org/2000/svg', name); for(const [k,v] of Object.entries(attrs)) e.setAttribute(k,v); svg.appendChild(e); return e; };
+  if(!rows.length){ mk('text',{x:20,y:40,fill:'currentColor'}).textContent='No data'; return; }
+  const baseline = useDefaults.checked ? baselines[rows[0].analyte] : null;
+  const xs=rows.map(r=>r.t.getTime()), ys=rows.map(r=>r.valueNum);
+  let minX=Math.min(...xs), maxX=Math.max(...xs), minY=Math.min(...ys), maxY=Math.max(...ys);
+  const defaultHigh = baseline && Number.isFinite(baseline.highNum) ? baseline.highNum : undefined;
+  const defaultLow = baseline && Number.isFinite(baseline.lowNum) ? baseline.lowNum : undefined;
+  for (const v of [defaultHigh, defaultLow].filter(Number.isFinite)) { minY=Math.min(minY, v); maxY=Math.max(maxY, v); }
+  const padY=(maxY-minY||1)*0.18;
+  const x=v=>L+(v-minX)/(maxX-minX||1)*(W-L-R);
+  const y=v=>H-B-(v-(minY-padY))/((maxY+padY)-(minY-padY)||1)*(H-T-B);
+  for(let i=0;i<4;i++){ const yy=T+i*(H-T-B)/3; mk('line',{x1:L,y1:yy,x2:W-R,y2:yy,stroke:'currentColor','stroke-opacity':.10}); }
+  mk('line',{x1:L,y1:H-B,x2:W-R,y2:H-B,stroke:'currentColor','stroke-opacity':.32});
+  mk('line',{x1:L,y1:T,x2:L,y2:H-B,stroke:'currentColor','stroke-opacity':.32});
+  if(baseline && (Number.isFinite(defaultHigh) || Number.isFinite(defaultLow))){
+    if(Number.isFinite(defaultHigh) && Number.isFinite(defaultLow)) mk('rect',{x:L,y:y(defaultHigh),width:W-L-R,height:Math.max(1,y(defaultLow)-y(defaultHigh)),fill:'#137333','fill-opacity':.08});
+    if(Number.isFinite(defaultHigh)){ const yy=y(defaultHigh); mk('line',{x1:L,y1:yy,x2:W-R,y2:yy,stroke:'#137333','stroke-dasharray':'3 5','stroke-opacity':.7}); mk('text',{x:W-R-4,y:yy-6,'text-anchor':'end',fill:'#137333','font-size':12}).textContent=baseline.target || ('general high '+defaultHigh); }
+    if(Number.isFinite(defaultLow)){ const yy=y(defaultLow); mk('line',{x1:L,y1:yy,x2:W-R,y2:yy,stroke:'#137333','stroke-dasharray':'3 5','stroke-opacity':.55}); }
+  }
+  const path = rows.map((r,i)=>(i?'L':'M')+x(r.t.getTime()).toFixed(1)+' '+y(r.valueNum).toFixed(1)).join(' ');
+  mk('path',{d:path,fill:'none',stroke:'var(--accent)','stroke-width':opts.hero?3.5:3,'stroke-linecap':'round','stroke-linejoin':'round'});
+  const latestRow = rows.at(-1);
+  for(const r of rows){
+    const flagged = !!r.flag;
+    const c = mk('circle',{cx:x(r.t.getTime()),cy:y(r.valueNum),r:opts.hero?6:5,fill:flagged?'#b00020':'var(--accent)',stroke:'Canvas','stroke-width':2});
+    const title = document.createElementNS('http://www.w3.org/2000/svg', 'title'); title.textContent = `${r.date}: ${fmt(r)}${r.ref_text ? ' · ref '+r.ref_text : ''}`; c.appendChild(title);
+    if (opts.hero || r === latestRow) mk('text',{x:x(r.t.getTime()),y:y(r.valueNum)-11,'text-anchor':'middle','font-size':opts.hero?13:12,'font-weight':r===latestRow?700:500,'fill-opacity':r===latestRow?1:.6,fill:flagged?'#b00020':'currentColor'}).textContent=r.value;
+    if (opts.hero || r === latestRow) mk('text',{x:x(r.t.getTime()),y:H-18,'text-anchor':'middle','font-size':12,fill:'currentColor','fill-opacity':.68}).textContent=dateShort(r.date);
+  }
+  if (!opts.mini) {
+    mk('text',{x:8,y:T+4,'font-size':12,fill:'currentColor','fill-opacity':.68}).textContent=(maxY+padY).toFixed(1);
+    mk('text',{x:8,y:H-B,'font-size':12,fill:'currentColor','fill-opacity':.68}).textContent=(minY-padY).toFixed(1);
+  }
+}
+function renderHero(){
+  const rows = rowsFor(sel.value);
+  const latest = rows.at(-1), prev = rows.at(-2);
+  heroTitle.textContent = sel.value;
+  const b = rows.length ? baselines[rows[0].analyte] : null;
+  chartNote.textContent = rows.length ? `${rows.length} result(s) · ${rows[0].unit || 'no unit'}${useDefaults.checked && b ? ' · general target '+b.target : ''}` : 'No data';
+  selectedStats.innerHTML = latest ? `
+    <strong class="${latest.flag?'high':''}">${fmt(latest)}</strong>
+    <span>${deltaText(latest, prev)}</span>
+    <span class="${latest.flag?'high':''}">${latest.flag || 'Not flagged'}</span>
+    <span>${latest.ref_text || (b?.target ? 'target '+b.target : '')}</span>
+  ` : '';
+  analyteHelp.innerHTML = `<summary>What this means</summary><div style="margin-top:6px">${helpText[sel.value] || 'Explanation not added yet.'}</div>`;
+  drawChart(chart, rows, {hero:true});
+  document.querySelectorAll('button.chip').forEach(b => b.classList.toggle('active', b.textContent===sel.value));
+}
+function makeTrendRow(a){
+  const rows = rowsFor(a); const latest = rows.at(-1), prev = rows.at(-2);
+  const row = document.createElement('div'); row.className='trendItem'; row.tabIndex=0; row.role='button'; row.dataset.analyte=a;
+  row.title = latest ? statusText(latest) : '';
+  row.innerHTML = `<strong>${a}</strong><span class="value ${latest?.flag?'high':''}">${latest ? fmt(latest) : '—'}</span><span class="change">${latest ? deltaText(latest, prev) : ''}</span><small>${latest?.flag ? `<span class="high">${shortStatus(latest)}</span>` : 'Not flagged'}</small>`;
+  const activate = () => { sel.value=a; renderHero(); document.querySelector('.hero')?.scrollIntoView({behavior:'smooth', block:'start'}); };
+  row.onclick = activate;
+  row.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activate(); } };
+  return row;
+}
+function shouldShowPanel(a, group){
+  const rows = rowsFor(a); const latest = rows.at(-1);
+  const priority = ['Lipids / cardiovascular', 'Liver', 'Kidney / metabolism'];
+  return rows.length >= 3 || latest?.flag || (priority.includes(group) && rows.length > 1);
+}
+function renderDashboard(){
+  dashboard.innerHTML='';
+  for(const group of dashboardGroups){
+    const present = (groups[group] || []).filter(a => analytes.includes(a) && shouldShowPanel(a, group));
+    if (!present.length) continue;
+    const section = document.createElement('details'); section.className='groupSection'; section.dataset.group = group;
+    if (group !== 'Blood count') section.open = true;
+    section.innerHTML = `<summary><h3 style="display:inline">${group}</h3></summary><div class="trendList"></div>`;
+    const list = section.querySelector('.trendList');
+    for(const a of present) list.appendChild(makeTrendRow(a));
+    dashboard.appendChild(section);
+  }
+}
+function renderSummary(){
+  const latest = latestWithPrevious();
+  const latestDate = [...new Set(data.map(r=>r.date))].sort().at(-1);
+  const latestCount = data.filter(r=>r.date===latestDate).length;
+  const attention = latest.filter(isAttention);
+  const changes = latest.filter(x => x.prev).map(x => ({...x, delta:x.latest.valueNum-x.prev.valueNum})).filter(x => Number.isFinite(x.delta));
+  const improved = changes.filter(x => x.prev.flag && !x.latest.flag).sort((a,b)=>Math.abs(b.delta)-Math.abs(a.delta))[0];
+  const worsened = changes
+    .filter(x => !(x.prev.flag && !x.latest.flag))
+    .filter(x => x.latest.flag || trendWorsened(x.analyte, x.delta))
+    .sort((a,b)=>(priorityRank[a.analyte]??999)-(priorityRank[b.analyte]??999) || Math.abs(b.delta)-Math.abs(a.delta))[0];
+  globalHighlights.innerHTML = `<div class="summaryLine"><strong>Latest:</strong> ${latestDate || '—'}${latestDate ? ` · ${latestCount} markers` : ''} · <strong class="${attention.length?'high':''}">${attention.length || 'no'} flagged</strong>${worsened ? ` · <strong>Worsened:</strong> ${worsened.analyte} ${fmt(worsened.prev)} → ${fmt(worsened.latest)}` : ''}${improved ? ` · <strong>Improved:</strong> ${improved.analyte} ${fmt(improved.prev)} → ${fmt(improved.latest)}` : ''}</div>`;
+}
+function renderCards(){
+  const latest = latestWithPrevious();
+  const attention = latest.filter(isAttention).sort(byPriority);
+  attentionCards.innerHTML = attention.length
+    ? attention.map(x => `<div class="attentionItem" tabindex="0" role="button" data-analyte="${x.analyte}" title="${statusText(x.latest)}"><strong>${x.analyte}</strong><span class="value">${fmt(x.latest)}</span><small>${deltaText(x.latest, x.prev)} · <span class="badge high">${shortStatus(x.latest)}</span></small></div>`).join('')
+    : '<div class="attentionItem"><strong>No flagged latest values</strong><span>—</span><small>based on parsed ranges</small></div>';
+  attentionCards.querySelectorAll('[data-analyte]').forEach(el => {
+    const activate = () => { sel.value = el.dataset.analyte; render(); document.querySelector('.hero')?.scrollIntoView({behavior:'smooth', block:'start'}); };
+    el.onclick = activate;
+    el.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activate(); } };
+  });
+}
+function renderTable(){
+  const rows=data.slice().sort((a,b)=>b.t-a.t || a.analyte.localeCompare(b.analyte));
+
+  const groups = new Map();
+  for (const r of rows) {
+    const key = `${r.date}|${r.source_file}`;
+    if (!groups.has(key)) groups.set(key, {date:r.date, source_file:r.source_file, lab:r.lab, analytes:[], flagged:[]});
+    const g = groups.get(key);
+    g.analytes.push(r.analyte);
+    if (r.flag) g.flagged.push(`${r.analyte} ${r.value}${r.unit ? ' '+r.unit : ''}`);
+  }
+  const reportRows = [...groups.values()].sort((a,b)=>b.date.localeCompare(a.date));
+  reportsTable.innerHTML = `<thead><tr><th>Date</th><th>Lab</th><th>Checked</th><th>Flagged</th><th>Source</th></tr></thead><tbody>` +
+    reportRows.map(g => `<tr><td>${g.date}</td><td>${g.lab}</td><td>${[...new Set(g.analytes)].sort().join(', ')}</td><td class="${g.flagged.length?'high':''}">${g.flagged.join(', ') || ''}</td><td>PDF</td></tr>`).join('') +
+    '</tbody>';
+
+  const cols=['date','analyte','value','unit','ref_text','flag','lab','source_file','notes'];
+  table.innerHTML = `<thead><tr>${cols.map(c=>`<th>${c}</th>`).join('')}</tr></thead><tbody>` + rows.map(r=>`<tr>${cols.map(c=>`<td class="${c==='flag'&&r[c]?'high':''}">${r[c]||''}</td>`).join('')}</tr>`).join('') + '</tbody>';
+}
+function render(){ renderSummary(); renderHero(); renderDashboard(); renderCards(); renderTable(); }
+render();
+</script>
+</body>
+</html>
