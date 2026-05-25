@@ -21,6 +21,8 @@
   .importHeader { display:flex; flex-wrap:wrap; justify-content:flex-end; gap:8px 12px; align-items:center; text-align:right; }
   .importHeader input { max-width: 270px; }
   a { color: inherit; text-underline-offset: 2px; }
+  :focus-visible { outline: 3px solid color-mix(in srgb, var(--accent) 70%, transparent); outline-offset: 3px; }
+  .visuallyHidden { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0; }
   .importHeader a { color: var(--muted); font-size: 13px; text-decoration:none; }
   .importHeader a:hover { color: var(--accent); text-decoration:underline; }
   .pageFooter { border-top: 1px solid var(--line); margin-top: 18px; }
@@ -61,7 +63,8 @@
   .groupSection h3 { margin: 0 0 8px; font-size: 15px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
   .trendList { display:grid; gap:6px; margin-top:8px; }
   .trendItem { display:grid; grid-template-columns:minmax(160px,1fr) auto minmax(120px,auto) auto; gap:10px; align-items:baseline; padding:7px 10px; border:1px solid var(--line); border-radius:10px; background:var(--soft); cursor:pointer; }
-  .trendItem:hover, .trendItem:focus { border-color: var(--accent); outline:none; }
+  .trendItem:hover { border-color: var(--accent); }
+  .trendItem:focus-visible { border-color: var(--accent); outline: 3px solid color-mix(in srgb, var(--accent) 70%, transparent); outline-offset: 3px; }
   .trendItem strong { font-size:14px; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .trendItem .value { font-weight:720; font-variant-numeric:tabular-nums; }
   .trendItem .change, .trendItem small { color:var(--muted); text-align:right; }
@@ -93,14 +96,16 @@
   .summaryLine { color: var(--muted); font-size: 14px; line-height: 1.5; }
   .summaryLine strong { color: var(--fg); }
   .attentionList { display:grid; gap:6px; }
-  .attentionItem { display:grid; grid-template-columns:minmax(120px,1fr) auto minmax(120px,auto); gap:10px; align-items:baseline; padding:7px 10px; border:1px solid var(--line); border-radius:10px; background:var(--soft); cursor:pointer; }
-  .attentionItem:hover, .attentionItem:focus { border-color: var(--accent); outline: none; }
+  .attentionItem { display:grid; grid-template-columns:minmax(120px,1fr) auto minmax(120px,auto); gap:10px; align-items:baseline; padding:7px 10px; border:1px solid var(--line); border-radius:10px; background:var(--soft); }
+  .attentionItem[data-analyte] { cursor:pointer; }
+  .attentionItem:hover { border-color: var(--accent); }
+  .attentionItem:focus-visible { border-color: var(--accent); outline: 3px solid color-mix(in srgb, var(--accent) 70%, transparent); outline-offset: 3px; }
   .attentionItem strong { font-size:14px; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .attentionItem .value { font-weight:720; color:var(--bad); font-variant-numeric:tabular-nums; }
   .attentionItem small { color:var(--muted); text-align:right; }
   @media (max-width: 520px) { .attentionItem { grid-template-columns:1fr auto; } .attentionItem small { grid-column:1 / -1; text-align:left; } }
   .tableWrap { max-width: 100%; overflow:auto; border: 1px solid var(--line); border-radius: 16px; }
-  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  table { width: 100%; min-width: 680px; border-collapse: collapse; font-size: 14px; }
   th, td { border-bottom: 1px solid var(--line); padding: 8px 10px; text-align: left; vertical-align: top; }
   th { position: sticky; top: 0; background: Canvas; font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
   tr:hover td { background: var(--soft); }
@@ -118,9 +123,10 @@
       <p class="sub">Private local viewer. Triage first, details below.</p>
     </div>
     <div class="importHeader" aria-label="Import data">
-      <input id="csvFile" type="file" accept=".csv,text/csv">
+      <label class="visuallyHidden" for="csvFile">Import CSV file</label>
+      <input id="csvFile" type="file" accept=".csv,text/csv" aria-describedby="importStatus">
       <a href="examples/blood-tests.example.csv" download>Example CSV</a>
-      <div id="importStatus" class="importStatus">No data loaded.</div>
+      <div id="importStatus" class="importStatus" role="status" aria-live="polite">No data loaded.</div>
     </div>
   </div>
 </header>
@@ -150,6 +156,7 @@
       <header><h3 id="heroTitle">Selected analyte</h3><span class="unit" id="chartNote"></span></header>
       <div class="heroMeta" id="selectedStats"></div>
       <svg id="chart" viewBox="0 0 900 340" role="img" aria-label="selected analyte trend chart"></svg>
+      <p class="note" id="chartSummary"></p>
       <details class="help" id="analyteHelp"></details>
     </div>
 
@@ -172,7 +179,7 @@
     <section>
       <details>
         <summary><h2 style="display:inline">Reports</h2></summary>
-        <p class="note">One row per report/date. Use this as the audit trail; charts are the main UI.</p>
+        <p class="note">One row per report/date. Use this as the audit trail; the tables below are the accessible text alternative to the charts.</p>
         <div class="tableWrap"><table id="reportsTable"></table></div>
       </details>
       <details style="margin-top:12px">
@@ -224,6 +231,9 @@ const requiredColumns = ['date','analyte','value','unit'];
 const expectedColumns = ['date','source_date','source_file','source_type','lab','analyte','original_name','value','unit','ref_low','ref_high','ref_text','flag','notes'];
 let data = [];
 let analytes = [];
+let rowsByAnalyte = new Map();
+let latestCache = [];
+let latestDate = '';
 const groups = {
   'Lipids / cardiovascular': ['LDL','HDL','Triglycerides','Non-HDL','Total cholesterol'],
   'Liver': ['ALT','AST','Gamma-GT','LDH'],
@@ -307,13 +317,35 @@ const baselineData = parseCSV(document.getElementById('baselines').textContent.t
 const baselines = Object.fromEntries(baselineData.map(b => [b.analyte, {...b, lowNum:Number(b.low), highNum:Number(b.high)}]));
 const sel = document.getElementById('analyte');
 
+function esc(value){
+  return String(value ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+}
+function isValidIsoDate(s){
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(s || '')) return false;
+  const d = new Date(s + 'T00:00:00Z');
+  return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === s;
+}
+function rebuildCaches(){
+  rowsByAnalyte = new Map();
+  for (const r of data) {
+    if (!rowsByAnalyte.has(r.analyte)) rowsByAnalyte.set(r.analyte, []);
+    rowsByAnalyte.get(r.analyte).push(r);
+  }
+  for (const rows of rowsByAnalyte.values()) rows.sort((a,b)=>a.t-b.t);
+  analytes = [...rowsByAnalyte.keys()].sort((a,b)=>(priorityRank[a]??999)-(priorityRank[b]??999) || a.localeCompare(b));
+  latestCache = analytes.map(a => {
+    const rows = rowsByAnalyte.get(a) || [];
+    return { analyte:a, rows, latest:rows.at(-1), prev:rows.at(-2) };
+  }).filter(x => x.latest);
+  latestDate = data.length ? [...new Set(data.map(r=>r.date))].sort().at(-1) : '';
+}
 function validateRows(rows){
   const errors = [];
   const header = rows.header || [];
   for (const col of requiredColumns) if (!header.includes(col)) errors.push(`Missing required column: ${col}`);
   rows.forEach((r, i) => {
     const line = i + 2;
-    if (!r.date || Number.isNaN(new Date(r.date+'T00:00:00').getTime())) errors.push(`Line ${line}: invalid date`);
+    if (!isValidIsoDate(r.date)) errors.push(`Line ${line}: invalid date`);
     if (!r.analyte) errors.push(`Line ${line}: missing analyte`);
     if (!r.value || !Number.isFinite(Number(r.value))) errors.push(`Line ${line}: value must be numeric`);
   });
@@ -328,21 +360,20 @@ function prepareData(csvText){
 }
 
 function rebuildNavigation(){
-  analytes = [...new Set(data.map(r=>r.analyte))].sort((a,b)=>(priorityRank[a]??999)-(priorityRank[b]??999) || a.localeCompare(b));
   sel.innerHTML = '';
   chips.innerHTML = '';
   for (const [group, names] of Object.entries(groups)) {
     const present = names.filter(a => analytes.includes(a));
     if (!present.length) continue;
     const og = document.createElement('optgroup'); og.label = group;
-    for (const a of present) og.appendChild(new Option(`${a} (${data.filter(r=>r.analyte===a).length})`, a));
+    for (const a of present) og.appendChild(new Option(`${a} (${rowsFor(a).length})`, a));
     sel.appendChild(og);
   }
   const grouped = new Set(Object.values(groups).flat());
   const other = analytes.filter(a => !grouped.has(a));
   if (other.length) {
     const og = document.createElement('optgroup'); og.label = 'Other';
-    for (const a of other) og.appendChild(new Option(`${a} (${data.filter(r=>r.analyte===a).length})`, a));
+    for (const a of other) og.appendChild(new Option(`${a} (${rowsFor(a).length})`, a));
     sel.appendChild(og);
   }
   sel.value = analytes.includes('LDL') ? 'LDL' : (analytes[0] || '');
@@ -364,7 +395,9 @@ function rebuildNavigation(){
 
 function loadCsv(csvText, label='CSV'){
   data = prepareData(csvText);
+  rebuildCaches();
   rebuildNavigation();
+  renderTable();
   importStatus.className = 'importStatus';
   importStatus.textContent = `${label}: loaded ${data.length} measurements across ${analytes.length} analytes. Not stored.`;
   render();
@@ -375,6 +408,10 @@ csvFile.onchange = async () => {
   if (!file) return;
   try { loadCsv(await file.text(), file.name); }
   catch (err) {
+    data = [];
+    rebuildCaches();
+    rebuildNavigation();
+    render();
     importStatus.className = 'importStatus error';
     importStatus.textContent = String(err.message || err);
   }
@@ -386,15 +423,12 @@ useDefaults.onchange = render;
 sel.onchange = () => { render(); document.querySelector('.hero')?.scrollIntoView({behavior:'smooth', block:'start'}); };
 
 function rowsFor(analyte){
-  return data.filter(r => r.analyte===analyte).sort((a,b)=>a.t-b.t);
+  return rowsByAnalyte.get(analyte) || [];
 }
 function fmt(r){ return `${r.value}${r.unit ? ' '+r.unit : ''}`; }
 function dateShort(s){ return s.slice(2); }
 function latestWithPrevious(){
-  return analytes.map(a => {
-    const rows = rowsFor(a);
-    return { analyte:a, rows, latest:rows.at(-1), prev:rows.at(-2) };
-  }).filter(x => x.latest);
+  return latestCache;
 }
 function deltaText(latest, prev){
   if(!prev) return `new · ${latest.date}`;
@@ -427,12 +461,19 @@ function mkSvg(parent, viewBox='0 0 900 250'){
 }
 function drawChart(svg, rows, opts={}){
   svg.innerHTML='';
-  const W=900,H=opts.hero?340:250,L=58,R=22,T=24,B=42;
+  const W=900,H=opts.hero?340:250,L=58,R=58,T=24,B=42;
   const mk=(name,attrs)=>{ const e=document.createElementNS('http://www.w3.org/2000/svg', name); for(const [k,v] of Object.entries(attrs)) e.setAttribute(k,v); svg.appendChild(e); return e; };
-  if(!rows.length){ mk('text',{x:20,y:40,fill:'currentColor'}).textContent='No data'; return; }
+  if(!rows.length){ svg.setAttribute('aria-label', 'No chart data loaded'); mk('text',{x:20,y:40,fill:'currentColor'}).textContent='No data'; return; }
+  const first = rows[0], latestForLabel = rows.at(-1);
+  svg.setAttribute('aria-label', `${first.analyte} trend chart: ${rows.length} result(s), latest ${fmt(latestForLabel)} on ${latestForLabel.date}${latestForLabel.flag ? ', flagged '+latestForLabel.flag : ''}`);
   const baseline = useDefaults.checked ? baselines[rows[0].analyte] : null;
-  const xs=rows.map(r=>r.t.getTime()), ys=rows.map(r=>r.valueNum);
-  let minX=Math.min(...xs), maxX=Math.max(...xs), minY=Math.min(...ys), maxY=Math.max(...ys);
+  let minX=Infinity, maxX=-Infinity, minY=Infinity, maxY=-Infinity;
+  for (const r of rows) {
+    const tx = r.t.getTime();
+    minX = Math.min(minX, tx); maxX = Math.max(maxX, tx);
+    minY = Math.min(minY, r.valueNum); maxY = Math.max(maxY, r.valueNum);
+  }
+  if (minX === maxX) { minX -= 86400000; maxX += 86400000; }
   const defaultHigh = baseline && Number.isFinite(baseline.highNum) ? baseline.highNum : undefined;
   const defaultLow = baseline && Number.isFinite(baseline.lowNum) ? baseline.lowNum : undefined;
   for (const v of [defaultHigh, defaultLow].filter(Number.isFinite)) { minY=Math.min(minY, v); maxY=Math.max(maxY, v); }
@@ -443,19 +484,24 @@ function drawChart(svg, rows, opts={}){
   mk('line',{x1:L,y1:H-B,x2:W-R,y2:H-B,stroke:'currentColor','stroke-opacity':.32});
   mk('line',{x1:L,y1:T,x2:L,y2:H-B,stroke:'currentColor','stroke-opacity':.32});
   if(baseline && (Number.isFinite(defaultHigh) || Number.isFinite(defaultLow))){
-    if(Number.isFinite(defaultHigh) && Number.isFinite(defaultLow)) mk('rect',{x:L,y:y(defaultHigh),width:W-L-R,height:Math.max(1,y(defaultLow)-y(defaultHigh)),fill:'#137333','fill-opacity':.08});
-    if(Number.isFinite(defaultHigh)){ const yy=y(defaultHigh); mk('line',{x1:L,y1:yy,x2:W-R,y2:yy,stroke:'#137333','stroke-dasharray':'3 5','stroke-opacity':.7}); mk('text',{x:W-R-4,y:yy-6,'text-anchor':'end',fill:'#137333','font-size':12}).textContent=baseline.target || ('general high '+defaultHigh); }
-    if(Number.isFinite(defaultLow)){ const yy=y(defaultLow); mk('line',{x1:L,y1:yy,x2:W-R,y2:yy,stroke:'#137333','stroke-dasharray':'3 5','stroke-opacity':.55}); }
+    if(Number.isFinite(defaultHigh) && Number.isFinite(defaultLow)) mk('rect',{x:L,y:y(defaultHigh),width:W-L-R,height:Math.max(1,y(defaultLow)-y(defaultHigh)),fill:'var(--ok)','fill-opacity':.08});
+    if(Number.isFinite(defaultHigh)){ const yy=y(defaultHigh); mk('line',{x1:L,y1:yy,x2:W-R,y2:yy,stroke:'var(--ok)','stroke-dasharray':'3 5','stroke-opacity':.7}); mk('text',{x:W-R-4,y:yy-6,'text-anchor':'end',fill:'var(--ok)','font-size':12}).textContent=baseline.target || ('general high '+defaultHigh); }
+    if(Number.isFinite(defaultLow)){ const yy=y(defaultLow); mk('line',{x1:L,y1:yy,x2:W-R,y2:yy,stroke:'var(--ok)','stroke-dasharray':'3 5','stroke-opacity':.55}); }
   }
   const path = rows.map((r,i)=>(i?'L':'M')+x(r.t.getTime()).toFixed(1)+' '+y(r.valueNum).toFixed(1)).join(' ');
   mk('path',{d:path,fill:'none',stroke:'var(--accent)','stroke-width':opts.hero?3.5:3,'stroke-linecap':'round','stroke-linejoin':'round'});
+  const hoverLine = mk('line',{x1:0,y1:T,x2:0,y2:H-B,stroke:'var(--accent)','stroke-width':1.5,'stroke-dasharray':'4 4','stroke-opacity':0});
   const latestRow = rows.at(-1);
   for(const r of rows){
-    const flagged = !!r.flag;
-    const c = mk('circle',{cx:x(r.t.getTime()),cy:y(r.valueNum),r:opts.hero?6:5,fill:flagged?'#b00020':'var(--accent)',stroke:'Canvas','stroke-width':2});
+    const flagged = !!r.flag, cx=x(r.t.getTime()), cy=y(r.valueNum);
+    const c = mk('circle',{cx,cy,r:opts.hero?6:5,fill:flagged?'#b00020':'var(--accent)',stroke:'Canvas','stroke-width':2,tabindex:0,'aria-label':`${r.date}: ${fmt(r)}${r.flag ? ', '+r.flag : ''}`});
     const title = document.createElementNS('http://www.w3.org/2000/svg', 'title'); title.textContent = `${r.date}: ${fmt(r)}${r.ref_text ? ' · ref '+r.ref_text : ''}`; c.appendChild(title);
-    if (opts.hero || r === latestRow) mk('text',{x:x(r.t.getTime()),y:y(r.valueNum)-11,'text-anchor':'middle','font-size':opts.hero?13:12,'font-weight':r===latestRow?700:500,'fill-opacity':r===latestRow?1:.6,fill:flagged?'#b00020':'currentColor'}).textContent=r.value;
-    if (opts.hero || r === latestRow) mk('text',{x:x(r.t.getTime()),y:H-18,'text-anchor':'middle','font-size':12,fill:'currentColor','fill-opacity':.68}).textContent=dateShort(r.date);
+    const showHover = () => { hoverLine.setAttribute('x1', cx); hoverLine.setAttribute('x2', cx); hoverLine.setAttribute('stroke-opacity', .65); c.setAttribute('r', opts.hero?8:7); };
+    const hideHover = () => { hoverLine.setAttribute('stroke-opacity', 0); c.setAttribute('r', opts.hero?6:5); };
+    c.addEventListener('mouseenter', showHover); c.addEventListener('mouseleave', hideHover);
+    c.addEventListener('focus', showHover); c.addEventListener('blur', hideHover);
+    if (opts.hero || r === latestRow) mk('text',{x:cx,y:cy-11,'text-anchor':'middle','font-size':opts.hero?13:12,'font-weight':r===latestRow?700:500,'fill-opacity':r===latestRow?1:.6,fill:flagged?'#b00020':'currentColor'}).textContent=r.value;
+    if (opts.hero || r === latestRow) mk('text',{x:cx,y:H-18,'text-anchor':'middle','font-size':12,fill:'currentColor','fill-opacity':.68}).textContent=dateShort(r.date);
   }
   if (!opts.mini) {
     mk('text',{x:8,y:T+4,'font-size':12,fill:'currentColor','fill-opacity':.68}).textContent=(maxY+padY).toFixed(1);
@@ -469,11 +515,12 @@ function renderHero(){
   const b = rows.length ? baselines[rows[0].analyte] : null;
   chartNote.textContent = rows.length ? `${rows.length} result(s) · ${rows[0].unit || 'no unit'}${useDefaults.checked && b ? ' · general target '+b.target : ''}` : 'No data';
   selectedStats.innerHTML = latest ? `
-    <strong class="${latest.flag?'high':''}">${fmt(latest)}</strong>
-    <span>${deltaText(latest, prev)}</span>
-    <span class="${latest.flag?'high':''}">${latest.flag || 'Not flagged'}</span>
-    <span>${latest.ref_text || (b?.target ? 'target '+b.target : '')}</span>
+    <strong class="${latest.flag?'high':''}">${esc(fmt(latest))}</strong>
+    <span>${esc(deltaText(latest, prev))}</span>
+    <span class="${latest.flag?'high':''}">${esc(latest.flag || 'Not flagged')}</span>
+    <span>${esc(latest.ref_text || (b?.target ? 'target '+b.target : ''))}</span>
   ` : '';
+  chartSummary.textContent = latest ? `${sel.value}: latest ${fmt(latest)} on ${latest.date}. ${deltaText(latest, prev)}. Status: ${shortStatus(latest)}.` : '';
   analyteHelp.innerHTML = `<summary>What this means</summary><div style="margin-top:6px">${helpText[sel.value] || 'Explanation not added yet.'}</div>`;
   drawChart(chart, rows, {hero:true});
   document.querySelectorAll('button.chip').forEach(b => b.classList.toggle('active', b.textContent===sel.value));
@@ -482,7 +529,7 @@ function makeTrendRow(a){
   const rows = rowsFor(a); const latest = rows.at(-1), prev = rows.at(-2);
   const row = document.createElement('div'); row.className='trendItem'; row.tabIndex=0; row.role='button'; row.dataset.analyte=a;
   row.title = latest ? statusText(latest) : '';
-  row.innerHTML = `<strong>${a}</strong><span class="value ${latest?.flag?'high':''}">${latest ? fmt(latest) : '—'}</span><span class="change">${latest ? deltaText(latest, prev) : ''}</span><small>${latest?.flag ? `<span class="high">${shortStatus(latest)}</span>` : 'Not flagged'}</small>`;
+  row.innerHTML = `<strong>${esc(a)}</strong><span class="value ${latest?.flag?'high':''}">${latest ? esc(fmt(latest)) : '—'}</span><span class="change">${latest ? esc(deltaText(latest, prev)) : ''}</span><small>${latest?.flag ? `<span class="high">${esc(shortStatus(latest))}</span>` : 'Not flagged'}</small>`;
   const activate = () => { sel.value=a; renderHero(); document.querySelector('.hero')?.scrollIntoView({behavior:'smooth', block:'start'}); };
   row.onclick = activate;
   row.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activate(); } };
@@ -508,7 +555,6 @@ function renderDashboard(){
 }
 function renderSummary(){
   const latest = latestWithPrevious();
-  const latestDate = [...new Set(data.map(r=>r.date))].sort().at(-1);
   const latestCount = data.filter(r=>r.date===latestDate).length;
   const attention = latest.filter(isAttention);
   const changes = latest.filter(x => x.prev).map(x => ({...x, delta:x.latest.valueNum-x.prev.valueNum})).filter(x => Number.isFinite(x.delta));
@@ -517,13 +563,13 @@ function renderSummary(){
     .filter(x => !(x.prev.flag && !x.latest.flag))
     .filter(x => x.latest.flag || trendWorsened(x.analyte, x.delta))
     .sort((a,b)=>(priorityRank[a.analyte]??999)-(priorityRank[b.analyte]??999) || Math.abs(b.delta)-Math.abs(a.delta))[0];
-  globalHighlights.innerHTML = `<div class="summaryLine"><strong>Latest:</strong> ${latestDate || '—'}${latestDate ? ` · ${latestCount} markers` : ''} · <strong class="${attention.length?'high':''}">${attention.length || 'no'} flagged</strong>${worsened ? ` · <strong>Worsened:</strong> ${worsened.analyte} ${fmt(worsened.prev)} → ${fmt(worsened.latest)}` : ''}${improved ? ` · <strong>Improved:</strong> ${improved.analyte} ${fmt(improved.prev)} → ${fmt(improved.latest)}` : ''}</div>`;
+  globalHighlights.innerHTML = `<div class="summaryLine"><strong>Latest:</strong> ${esc(latestDate || '—')}${latestDate ? ` · ${latestCount} markers` : ''} · <strong class="${attention.length?'high':''}">${attention.length || 'no'} flagged</strong>${worsened ? ` · <strong>Worsened:</strong> ${esc(worsened.analyte)} ${esc(fmt(worsened.prev))} → ${esc(fmt(worsened.latest))}` : ''}${improved ? ` · <strong>Improved:</strong> ${esc(improved.analyte)} ${esc(fmt(improved.prev))} → ${esc(fmt(improved.latest))}` : ''}</div>`;
 }
 function renderCards(){
   const latest = latestWithPrevious();
   const attention = latest.filter(isAttention).sort(byPriority);
   attentionCards.innerHTML = attention.length
-    ? attention.map(x => `<div class="attentionItem" tabindex="0" role="button" data-analyte="${x.analyte}" title="${statusText(x.latest)}"><strong>${x.analyte}</strong><span class="value">${fmt(x.latest)}</span><small>${deltaText(x.latest, x.prev)} · <span class="badge high">${shortStatus(x.latest)}</span></small></div>`).join('')
+    ? attention.map(x => `<div class="attentionItem" tabindex="0" role="button" data-analyte="${esc(x.analyte)}" title="${esc(statusText(x.latest))}"><strong>${esc(x.analyte)}</strong><span class="value">${esc(fmt(x.latest))}</span><small>${esc(deltaText(x.latest, x.prev))} · <span class="badge high">${esc(shortStatus(x.latest))}</span></small></div>`).join('')
     : '<div class="attentionItem"><strong>No flagged latest values</strong><span>—</span><small>based on parsed ranges</small></div>';
   attentionCards.querySelectorAll('[data-analyte]').forEach(el => {
     const activate = () => { sel.value = el.dataset.analyte; render(); document.querySelector('.hero')?.scrollIntoView({behavior:'smooth', block:'start'}); };
@@ -544,16 +590,17 @@ function renderTable(){
   }
   const reportRows = [...groups.values()].sort((a,b)=>b.date.localeCompare(a.date));
   reportsTable.innerHTML = `<thead><tr><th>Date</th><th>Lab</th><th>Checked</th><th>Flagged</th><th>Source</th></tr></thead><tbody>` +
-    reportRows.map(g => `<tr><td>${g.date}</td><td>${g.lab}</td><td>${[...new Set(g.analytes)].sort().join(', ')}</td><td class="${g.flagged.length?'high':''}">${g.flagged.join(', ') || ''}</td><td>PDF</td></tr>`).join('') +
+    reportRows.map(g => `<tr><td>${esc(g.date)}</td><td>${esc(g.lab)}</td><td>${esc([...new Set(g.analytes)].sort().join(', '))}</td><td class="${g.flagged.length?'high':''}">${esc(g.flagged.join(', ') || '')}</td><td>${esc(g.source_file || 'PDF')}</td></tr>`).join('') +
     '</tbody>';
 
   const cols=['date','analyte','value','unit','ref_text','flag','lab','source_file','notes'];
-  table.innerHTML = `<thead><tr>${cols.map(c=>`<th>${c}</th>`).join('')}</tr></thead><tbody>` + rows.map(r=>`<tr>${cols.map(c=>`<td class="${c==='flag'&&r[c]?'high':''}">${r[c]||''}</td>`).join('')}</tr>`).join('') + '</tbody>';
+  table.innerHTML = `<thead><tr>${cols.map(c=>`<th>${esc(c)}</th>`).join('')}</tr></thead><tbody>` + rows.map(r=>`<tr>${cols.map(c=>`<td class="${c==='flag'&&r[c]?'high':''}">${esc(r[c]||'')}</td>`).join('')}</tr>`).join('') + '</tbody>';
 }
 function render(){
   document.body.classList.toggle('is-empty', data.length === 0);
   if (!data.length) {
     sel.disabled = true;
+    chartSummary.textContent = '';
     globalHighlights.innerHTML = '';
     attentionCards.innerHTML = '';
     dashboard.innerHTML = '';
@@ -562,7 +609,7 @@ function render(){
     return;
   }
   sel.disabled = false;
-  renderSummary(); renderHero(); renderDashboard(); renderCards(); renderTable();
+  renderSummary(); renderHero(); renderDashboard(); renderCards();
 }
 if (parseCSV(embeddedCsvText).length) loadCsv(embeddedCsvText, 'Embedded data');
 else { rebuildNavigation(); render(); }

@@ -56,7 +56,13 @@ pdftotext -layout /path/to/report.pdf extracted/report.txt
 
 Scanned PDFs/images:
 
-1. Render/export each page to an image into `ocr_pages/`.
+1. Render/export each page to an image into ignored `ocr_pages/`.
+
+   ```sh
+   mkdir -p ocr_pages
+   pdftoppm -png -r 200 /path/to/scanned-report.pdf ocr_pages/report
+   ```
+
 2. Run Apple Vision OCR:
 
    ```sh
@@ -67,6 +73,8 @@ Scanned PDFs/images:
 3. Manually review OCR output against the original report.
 4. Normalize measurements into your private CSV using the schema above.
 5. Import the CSV in the web page.
+
+The `extracted/`, `ocr/`, and `ocr_pages/` folders are temporary audit/work folders. Keep them only while checking the CSV; once rows are verified, the private CSV is enough to use the viewer.
 
 ## Safety check before committing
 
