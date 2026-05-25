@@ -9,14 +9,33 @@
     color-scheme: light dark;
     --bg: Canvas; --fg: CanvasText; --muted: color-mix(in srgb, CanvasText 55%, transparent);
     --line: color-mix(in srgb, CanvasText 16%, transparent); --soft: color-mix(in srgb, CanvasText 6%, transparent);
-    --accent:#2563eb; --bad:#b00020; --ok:#137333; --warn:#b26a00;
+    --accent:#0f766e; --bad:#dc2626; --ok:#15803d; --warn:#b45309;
     --measure: 1180px;
   }
   * { box-sizing: border-box; }
   html, body { max-width: 100%; }
   body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.45 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; overflow-wrap: anywhere; }
   .pageHeader { border-bottom: 1px solid var(--line); }
-  main, .bar, .shell { width: 100%; max-width: var(--measure); min-width: 0; margin: 0 auto; padding: 18px 22px; }
+  main, .bar, .shell, .footer { width: 100%; max-width: var(--measure); min-width: 0; margin: 0 auto; padding: 18px 22px; }
+  .bar { display:flex; justify-content:space-between; gap:18px; align-items:center; }
+  .importHeader { display:flex; flex-wrap:wrap; justify-content:flex-end; gap:8px 12px; align-items:center; text-align:right; }
+  .importHeader input { max-width: 270px; }
+  a { color: inherit; text-underline-offset: 2px; }
+  .importHeader a { color: var(--muted); font-size: 13px; text-decoration:none; }
+  .importHeader a:hover { color: var(--accent); text-decoration:underline; }
+  .pageFooter { border-top: 1px solid var(--line); margin-top: 18px; }
+  .footer { color: var(--muted); font-size: 13px; }
+  .footer p { margin: 0; }
+  .emptyState { display:none; border:1px dashed var(--line); border-radius:18px; padding:28px; background:var(--soft); text-align:center; }
+  .emptyState h2 { margin-top:0; font-size:24px; }
+  .emptyState p { color:var(--muted); margin:8px auto; max-width:62ch; }
+  .emptyActions { display:flex; flex-wrap:wrap; justify-content:center; gap:10px; margin-top:18px; }
+  .emptyState code { white-space:nowrap; }
+  body.is-empty .sidebar, body.is-empty .hero, body.is-empty #dataSections { display:none; }
+  body.is-empty .emptyState { display:block; }
+  body.is-empty .shell { grid-template-columns:1fr; }
+  @media (max-width: 760px) { .bar { align-items:flex-start; flex-direction:column; } .importHeader { justify-content:flex-start; text-align:left; } }
+  main, .shell { width: 100%; max-width: var(--measure); min-width: 0; margin: 0 auto; padding: 18px 22px; }
   .shell { display:grid; grid-template-columns: 280px minmax(0, 1fr); gap: 24px; align-items:start; }
   h1 { margin: 0; font-size: clamp(24px, 3vw, 34px); letter-spacing: -0.035em; line-height: 1; }
   h2 { margin: 20px 0 10px; font-size: 18px; letter-spacing: -0.015em; }
@@ -31,8 +50,10 @@
   .chips { display:grid; gap:10px; margin: 14px 0 0; padding-top: 12px; border-top: 1px solid var(--line); }
   .chipGroup { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
   .chipGroupTitle { flex: 0 0 100%; color: var(--muted); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; margin-top:2px; }
-  button.chip { border: 1px solid var(--line); background: var(--soft); color: var(--fg); border-radius: 999px; padding: 7px 11px; font: 600 14px/1 system-ui; cursor: pointer; }
-  button.chip:hover, button.chip.active { border-color: var(--accent); color: var(--accent); }
+  button.chip, button.primaryAction { border: 1px solid var(--line); background: var(--soft); color: var(--fg); border-radius: 999px; padding: 7px 11px; font: 600 14px/1 system-ui; cursor: pointer; }
+  button.chip:hover, button.chip.active { border-color: var(--accent); color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, transparent); }
+  button.primaryAction { padding: 10px 16px; border-color: color-mix(in srgb, var(--accent) 50%, var(--line)); color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, transparent); }
+  button.primaryAction:hover { border-color: var(--accent); color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent); }
   .content { min-width:0; }
   .layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; min-width: 0; }
   #dashboard { display: block; }
@@ -66,6 +87,8 @@
   .help { margin-top: 10px; padding: 10px 12px; border-radius: 12px; background: var(--soft); color: var(--muted); font-size: 14px; }
   .help summary { cursor:pointer; color: var(--fg); font-weight:700; }
   .help strong { color: var(--fg); }
+  .importStatus { flex-basis:100%; color: var(--muted); font-size: 13px; }
+  .importStatus.error { color: var(--bad); font-weight: 700; }
 
   .summaryLine { color: var(--muted); font-size: 14px; line-height: 1.5; }
   .summaryLine strong { color: var(--fg); }
@@ -90,8 +113,15 @@
 <body>
 <header class="pageHeader">
   <div class="bar">
-    <h1>Blood test trends</h1>
-    <p class="sub">Private local viewer. Triage first, details below. No server, no dependencies.</p>
+    <div>
+      <h1>Blood test trends</h1>
+      <p class="sub">Private local viewer. Triage first, details below.</p>
+    </div>
+    <div class="importHeader" aria-label="Import data">
+      <input id="csvFile" type="file" accept=".csv,text/csv">
+      <a href="examples/blood-tests.example.csv" download>Example CSV</a>
+      <div id="importStatus" class="importStatus">No data loaded.</div>
+    </div>
   </div>
 </header>
 
@@ -107,6 +137,15 @@
 
   <main class="content">
   <section class="layout">
+    <div class="emptyState" id="emptyState">
+      <h2>Import your CSV to start</h2>
+      <p>This viewer runs fully in your browser. Choose your private blood-test CSV in the header; it will be shown here for this session only.</p>
+      <p>Need a starting point? Download <code>examples/blood-tests.example.csv</code>, keep the header, and replace the sample rows.</p>
+      <div class="emptyActions">
+        <button id="demoButton" class="primaryAction" type="button">Load demo data</button>
+      </div>
+    </div>
+
     <div class="panel hero">
       <header><h3 id="heroTitle">Selected analyte</h3><span class="unit" id="chartNote"></span></header>
       <div class="heroMeta" id="selectedStats"></div>
@@ -114,6 +153,7 @@
       <details class="help" id="analyteHelp"></details>
     </div>
 
+    <div id="dataSections">
     <div class="panel">
       <header><h3>Summary</h3><span class="unit">What changed / what matters</span></header>
       <div id="globalHighlights"></div>
@@ -140,12 +180,24 @@
         <div class="tableWrap" style="margin-top:8px"><table id="table"></table></div>
       </details>
     </section>
+    </div>
   </section>
   </main>
 </div>
 
 <script id="csv" type="text/plain">
 date,source_date,source_file,source_type,lab,analyte,original_name,value,unit,ref_low,ref_high,ref_text,flag,notes
+</script>
+<script id="demo-csv" type="text/plain">
+date,source_date,source_file,source_type,lab,analyte,original_name,value,unit,ref_low,ref_high,ref_text,flag,notes
+2025-01-15,2025-01-15,sample-report-1.pdf,direct,Example Lab,LDL,LDL cholesterol,132,mg/dl,,,risk-adapted,high,Anonymized sample row
+2025-01-15,2025-01-15,sample-report-1.pdf,direct,Example Lab,HDL,HDL cholesterol,51,mg/dl,40,,>40,,Anonymized sample row
+2025-01-15,2025-01-15,sample-report-1.pdf,direct,Example Lab,Triglycerides,Triglycerides,118,mg/dl,,150,<150,,Anonymized sample row
+2025-01-15,2025-01-15,sample-report-1.pdf,direct,Example Lab,ALT,ALT,32,U/l,,50,<50,,Anonymized sample row
+2025-07-20,2025-07-20,sample-report-2.pdf,direct,Example Lab,LDL,LDL cholesterol,108,mg/dl,,,risk-adapted,,Anonymized sample row
+2025-07-20,2025-07-20,sample-report-2.pdf,direct,Example Lab,HDL,HDL cholesterol,55,mg/dl,40,,>40,,Anonymized sample row
+2025-07-20,2025-07-20,sample-report-2.pdf,direct,Example Lab,Triglycerides,Triglycerides,164,mg/dl,,150,<150,high,Anonymized sample row
+2025-07-20,2025-07-20,sample-report-2.pdf,direct,Example Lab,ALT,ALT,41,U/l,,50,<50,,Anonymized sample row
 </script>
 <script id="baselines" type="text/plain">
 analyte,unit,low,high,target,source,note
@@ -167,7 +219,11 @@ TSH,µU/ml,0.40,4.00,0.40-4.00,Common adult reference,Lab/clinical context matte
 BMI,kg/m2,18.5,25.0,18.5-25.0,WHO adult category,Not a blood marker; rough population measure
 </script>
 <script>
-const csvText = document.getElementById('csv').textContent.trim();
+const embeddedCsvText = document.getElementById('csv').textContent.trim();
+const requiredColumns = ['date','analyte','value','unit'];
+const expectedColumns = ['date','source_date','source_file','source_type','lab','analyte','original_name','value','unit','ref_low','ref_high','ref_text','flag','notes'];
+let data = [];
+let analytes = [];
 const groups = {
   'Lipids / cardiovascular': ['LDL','HDL','Triglycerides','Non-HDL','Total cholesterol'],
   'Liver': ['ALT','AST','Gamma-GT','LDH'],
@@ -242,44 +298,90 @@ function parseCSV(s){
     else { if(c==='"') q=true; else if(c===','){row.push(cell); cell='';} else if(c==='\n'){row.push(cell); rows.push(row); row=[]; cell='';} else if(c!=='\r') cell+=c; }
   }
   row.push(cell); rows.push(row);
-  const head=rows.shift();
-  return rows.filter(r=>r.length && r.some(Boolean)).map(r=>Object.fromEntries(head.map((h,i)=>[h,r[i]??''])));
+  const head=rows.shift() || [];
+  const parsed = rows.filter(r=>r.length && r.some(Boolean)).map(r=>Object.fromEntries(head.map((h,i)=>[h,r[i]??''])));
+  parsed.header = head;
+  return parsed;
 }
-const data = parseCSV(csvText).map(r => ({...r, valueNum: Number(r.value), t: new Date(r.date+'T00:00:00')}));
 const baselineData = parseCSV(document.getElementById('baselines').textContent.trim());
 const baselines = Object.fromEntries(baselineData.map(b => [b.analyte, {...b, lowNum:Number(b.low), highNum:Number(b.high)}]));
-const analytes = [...new Set(data.map(r=>r.analyte))].sort((a,b)=>(priorityRank[a]??999)-(priorityRank[b]??999) || a.localeCompare(b));
 const sel = document.getElementById('analyte');
-for (const [group, names] of Object.entries(groups)) {
-  const present = names.filter(a => analytes.includes(a));
-  if (!present.length) continue;
-  const og = document.createElement('optgroup'); og.label = group;
-  for (const a of present) og.appendChild(new Option(`${a} (${data.filter(r=>r.analyte===a).length})`, a));
-  sel.appendChild(og);
-}
-const grouped = new Set(Object.values(groups).flat());
-const other = analytes.filter(a => !grouped.has(a));
-if (other.length) {
-  const og = document.createElement('optgroup'); og.label = 'Other';
-  for (const a of other) og.appendChild(new Option(`${a} (${data.filter(r=>r.analyte===a).length})`, a));
-  sel.appendChild(og);
-}
-sel.value = 'LDL';
 
-for (const [group, names] of Object.entries(quickGroups)) {
-  const present = names.filter(a => analytes.includes(a));
-  if (!present.length) continue;
-  const wrap = document.createElement('div'); wrap.className='chipGroup';
-  const title = document.createElement('div'); title.className='chipGroupTitle'; title.textContent=group;
-  wrap.appendChild(title);
-  for (const a of present) {
-    const b = document.createElement('button'); b.className='chip'; b.type='button'; b.textContent=a;
-    b.onclick = () => { sel.value=a; render(); document.querySelector('.hero')?.scrollIntoView({behavior:'smooth', block:'start'}); };
-    wrap.appendChild(b);
+function validateRows(rows){
+  const errors = [];
+  const header = rows.header || [];
+  for (const col of requiredColumns) if (!header.includes(col)) errors.push(`Missing required column: ${col}`);
+  rows.forEach((r, i) => {
+    const line = i + 2;
+    if (!r.date || Number.isNaN(new Date(r.date+'T00:00:00').getTime())) errors.push(`Line ${line}: invalid date`);
+    if (!r.analyte) errors.push(`Line ${line}: missing analyte`);
+    if (!r.value || !Number.isFinite(Number(r.value))) errors.push(`Line ${line}: value must be numeric`);
+  });
+  return errors;
+}
+
+function prepareData(csvText){
+  const rows = parseCSV(csvText);
+  const errors = validateRows(rows);
+  if (errors.length) throw new Error(errors.slice(0, 8).join('\n') + (errors.length > 8 ? `\n…${errors.length - 8} more` : ''));
+  return rows.map(r => ({...r, valueNum: Number(r.value), t: new Date(r.date+'T00:00:00')}));
+}
+
+function rebuildNavigation(){
+  analytes = [...new Set(data.map(r=>r.analyte))].sort((a,b)=>(priorityRank[a]??999)-(priorityRank[b]??999) || a.localeCompare(b));
+  sel.innerHTML = '';
+  chips.innerHTML = '';
+  for (const [group, names] of Object.entries(groups)) {
+    const present = names.filter(a => analytes.includes(a));
+    if (!present.length) continue;
+    const og = document.createElement('optgroup'); og.label = group;
+    for (const a of present) og.appendChild(new Option(`${a} (${data.filter(r=>r.analyte===a).length})`, a));
+    sel.appendChild(og);
   }
-  chips.appendChild(wrap);
+  const grouped = new Set(Object.values(groups).flat());
+  const other = analytes.filter(a => !grouped.has(a));
+  if (other.length) {
+    const og = document.createElement('optgroup'); og.label = 'Other';
+    for (const a of other) og.appendChild(new Option(`${a} (${data.filter(r=>r.analyte===a).length})`, a));
+    sel.appendChild(og);
+  }
+  sel.value = analytes.includes('LDL') ? 'LDL' : (analytes[0] || '');
+
+  for (const [group, names] of Object.entries(quickGroups)) {
+    const present = names.filter(a => analytes.includes(a));
+    if (!present.length) continue;
+    const wrap = document.createElement('div'); wrap.className='chipGroup';
+    const title = document.createElement('div'); title.className='chipGroupTitle'; title.textContent=group;
+    wrap.appendChild(title);
+    for (const a of present) {
+      const b = document.createElement('button'); b.className='chip'; b.type='button'; b.textContent=a;
+      b.onclick = () => { sel.value=a; render(); document.querySelector('.hero')?.scrollIntoView({behavior:'smooth', block:'start'}); };
+      wrap.appendChild(b);
+    }
+    chips.appendChild(wrap);
+  }
 }
 
+function loadCsv(csvText, label='CSV'){
+  data = prepareData(csvText);
+  rebuildNavigation();
+  importStatus.className = 'importStatus';
+  importStatus.textContent = `${label}: loaded ${data.length} measurements across ${analytes.length} analytes. Not stored.`;
+  render();
+}
+
+csvFile.onchange = async () => {
+  const file = csvFile.files?.[0];
+  if (!file) return;
+  try { loadCsv(await file.text(), file.name); }
+  catch (err) {
+    importStatus.className = 'importStatus error';
+    importStatus.textContent = String(err.message || err);
+  }
+};
+demoButton.onclick = () => {
+  loadCsv(document.getElementById('demo-csv').textContent.trim(), 'Demo data');
+};
 useDefaults.onchange = render;
 sel.onchange = () => { render(); document.querySelector('.hero')?.scrollIntoView({behavior:'smooth', block:'start'}); };
 
@@ -448,8 +550,29 @@ function renderTable(){
   const cols=['date','analyte','value','unit','ref_text','flag','lab','source_file','notes'];
   table.innerHTML = `<thead><tr>${cols.map(c=>`<th>${c}</th>`).join('')}</tr></thead><tbody>` + rows.map(r=>`<tr>${cols.map(c=>`<td class="${c==='flag'&&r[c]?'high':''}">${r[c]||''}</td>`).join('')}</tr>`).join('') + '</tbody>';
 }
-function render(){ renderSummary(); renderHero(); renderDashboard(); renderCards(); renderTable(); }
-render();
+function render(){
+  document.body.classList.toggle('is-empty', data.length === 0);
+  if (!data.length) {
+    sel.disabled = true;
+    globalHighlights.innerHTML = '';
+    attentionCards.innerHTML = '';
+    dashboard.innerHTML = '';
+    reportsTable.innerHTML = '';
+    table.innerHTML = '';
+    return;
+  }
+  sel.disabled = false;
+  renderSummary(); renderHero(); renderDashboard(); renderCards(); renderTable();
+}
+if (parseCSV(embeddedCsvText).length) loadCsv(embeddedCsvText, 'Embedded data');
+else { rebuildNavigation(); render(); }
+
 </script>
+<footer class="pageFooter">
+  <div class="footer">
+    <p>Privacy: CSV files are parsed locally in your browser session. They are not uploaded and not saved to localStorage or IndexedDB. Refreshing or closing the tab clears imported data from the page.</p>
+    <p>© 2026 Made by <a href="https://amureki.me" rel="me">amureki</a>.</p>
+  </div>
+</footer>
 </body>
 </html>

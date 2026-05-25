@@ -1,0 +1,9 @@
+date,source_date,source_file,source_type,lab,analyte,original_name,value,unit,ref_low,ref_high,ref_text,flag,notes
+2025-01-15,2025-01-15,sample-report-1.pdf,direct,Example Lab,LDL,LDL cholesterol,132,mg/dl,,,risk-adapted,high,Anonymized sample row
+2025-01-15,2025-01-15,sample-report-1.pdf,direct,Example Lab,HDL,HDL cholesterol,51,mg/dl,40,,>40,,Anonymized sample row
+2025-01-15,2025-01-15,sample-report-1.pdf,direct,Example Lab,Triglycerides,Triglycerides,118,mg/dl,,150,<150,,Anonymized sample row
+2025-01-15,2025-01-15,sample-report-1.pdf,direct,Example Lab,ALT,ALT,32,U/l,,50,<50,,Anonymized sample row
+2025-07-20,2025-07-20,sample-report-2.pdf,direct,Example Lab,LDL,LDL cholesterol,108,mg/dl,,,risk-adapted,,Anonymized sample row
+2025-07-20,2025-07-20,sample-report-2.pdf,direct,Example Lab,HDL,HDL cholesterol,55,mg/dl,40,,>40,,Anonymized sample row
+2025-07-20,2025-07-20,sample-report-2.pdf,direct,Example Lab,Triglycerides,Triglycerides,164,mg/dl,,150,<150,high,Anonymized sample row
+2025-07-20,2025-07-20,sample-report-2.pdf,direct,Example Lab,ALT,ALT,41,U/l,,50,<50,,Anonymized sample row
