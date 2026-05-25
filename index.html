@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="Private, client-side blood test CSV trend viewer.">
+<meta name="description" content="Private, client-side viewer for blood.csv files.">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'none'; connect-src 'none'; form-action 'none'; object-src 'none'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'">
-<title>Blood test trends</title>
+<title>blood.csv</title>
 <style>
   :root {
     color-scheme: light dark;
@@ -121,13 +121,13 @@
 <header class="pageHeader">
   <div class="bar">
     <div>
-      <h1>Blood test trends</h1>
-      <p class="sub">Private local viewer. Triage first, details below.</p>
+      <h1><span aria-hidden="true">🩸</span> blood.csv</h1>
+      <p class="sub">Private local viewer for blood test trends.</p>
     </div>
     <div class="importHeader" aria-label="Import data">
       <label class="visuallyHidden" for="csvFile">Import CSV file</label>
       <input id="csvFile" type="file" accept=".csv,text/csv" aria-describedby="importStatus">
-      <a href="examples/blood-tests.example.csv" download>Example CSV</a>
+      <a href="examples/blood.csv" download>Example CSV</a>
       <div id="importStatus" class="importStatus" role="status" aria-live="polite">No data loaded.</div>
     </div>
   </div>
@@ -147,8 +147,8 @@
   <section class="layout">
     <div class="emptyState" id="emptyState">
       <h2>Import your CSV to start</h2>
-      <p>This viewer runs fully in your browser. Choose your private blood-test CSV in the header; it will be shown here for this session only.</p>
-      <p>Need a starting point? Download <code>examples/blood-tests.example.csv</code>, keep the header, and replace the sample rows.</p>
+      <p>This viewer runs fully in your browser. Choose your private blood.csv file in the header; it will be shown here for this session only.</p>
+      <p>Need a starting point? Download <code>examples/blood.csv</code>, keep the header, and replace the sample rows.</p>
       <div class="emptyActions">
         <button id="demoButton" class="primaryAction" type="button">Load demo data</button>
       </div>
