@@ -1,6 +1,6 @@
-# Blood test trends viewer
+# 🩸 blood.csv
 
-Static, no-dependency HTML viewer for normalized blood-test CSV exports.
+Static, no-dependency viewer for normalized blood lab exports.
 
 Personal data is intentionally not tracked. The public page reads local files in your browser only: no upload, no backend, no localStorage/IndexedDB persistence.
 
@@ -10,7 +10,7 @@ Personal data is intentionally not tracked. The public page reads local files in
 2. Click **Import data** and choose your private CSV.
 3. Review charts/tables. Close or refresh the tab to clear the loaded data from the page.
 
-Use `examples/blood-tests.example.csv` as both a starter template and anonymized sample. Keep the header, replace/delete sample rows, then import your private copy.
+Use `examples/blood.csv` as both a starter template and anonymized sample. Keep the header, replace/delete sample rows, then import your private copy.
 
 ## CSV schema
 
@@ -39,11 +39,11 @@ Keep your private file outside git or under ignored `data/`:
 
 ```sh
 mkdir -p data
-cp examples/blood-tests.example.csv data/blood-tests.csv
-$EDITOR data/blood-tests.csv
+cp examples/blood.csv data/blood.csv
+$EDITOR data/blood.csv
 ```
 
-Then import `data/blood-tests.csv` in the web page.
+Then import `data/blood.csv` in the web page.
 
 ## Add data from reports / OCR
 
@@ -76,10 +76,3 @@ Scanned PDFs/images:
 
 The `extracted/`, `ocr/`, and `ocr_pages/` folders are temporary audit/work folders. Keep them only while checking the CSV; once rows are verified, the private CSV is enough to use the viewer.
 
-## Safety check before committing
-
-```sh
-git status --ignored
-```
-
-Only non-private source files should be staged. `data/`, `extracted/`, `ocr/`, `ocr_pages/`, PDFs, images, and CSV/TSV files are ignored by default, except anonymized examples under `examples/`.
