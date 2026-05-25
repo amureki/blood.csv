@@ -21,16 +21,22 @@ Required columns:
 - `value`
 - `unit`
 
-Recommended full header:
+Practical starter header:
 
 ```csv
-date,source_date,source_file,source_type,lab,analyte,original_name,value,unit,ref_low,ref_high,ref_text,flag,notes
+date,lab,analyte,value,unit,ref_text,flag,notes
 ```
 
 Example row:
 
 ```csv
-2025-01-15,2025-01-15,private-report.pdf,direct,Lab name,LDL,LDL cholesterol,153,mg/dl,,,risk-adapted,high,
+2025-01-15,Lab name,LDL,153,mg/dl,risk-adapted,high,
+```
+
+Optional archival columns, if you want to track source reports/OCR provenance:
+
+```csv
+source_date,source_file,source_type,original_name,ref_low,ref_high
 ```
 
 ## Add data manually
