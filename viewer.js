@@ -211,7 +211,7 @@
     ui.search.value = ''; ui.csvSearch.value = ''; ui.csvOrder.value = 'source';
     ui.welcome.hidden = true; ui.loaded.hidden = false;
     ui.importStatus.className = 'fileStatus';
-    ui.importStatus.textContent = label + ' · ' + source.records.length + ' rows · Session only' + (demo ? ' · Synthetic sample data' : '');
+    ui.importStatus.textContent = label + ' · ' + source.records.length + ' rows' + (demo ? ' · Synthetic sample data' : '');
     ui.coverage.textContent = dates.length ? displayDate(dates[0]) + ' – ' + displayDate(dates.at(-1)) + ' · ' + series.reduce((count, item) => count + item.rows.length, 0) + ' results · ' + dates.length + ' dates' : source.records.length + ' source rows · ' + source.header.length + ' columns';
     const notices = [];
     if (unavailable.length) notices.push('Results needs one column each named date, analyte, value and unit. Open CSV table to review the available fields.');

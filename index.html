@@ -15,17 +15,15 @@
   <header class="pageHeader">
     <div class="bar">
       <span class="wordmark">blood.csv</span>
-      <span class="privacyLabel">Local files · session only</span>
       <button id="importButton" type="button">Import CSV</button>
       <input id="csvFile" type="file" accept=".csv,text/csv" aria-label="Choose CSV file" hidden>
     </div>
   </header>
   <main id="main" class="workspace">
-    <p id="importStatus" class="fileStatus" role="status" aria-live="polite">No data loaded.</p>
+    <p id="importStatus" class="fileStatus" role="status" aria-live="polite"></p>
     <section id="welcome" class="welcome" aria-labelledby="welcomeTitle">
       <h1 id="welcomeTitle">Your blood test history</h1>
       <p>Import a CSV to review your markers and their full history, or read every source record in a plain table.</p>
-      <p class="quiet">Your file stays in this browser session. Refreshing or closing the page clears the data.</p>
       <div class="welcomeActions">
         <button id="startButton" class="primary" type="button">Import CSV</button>
         <button id="demoButton" type="button">Load demo data</button>
@@ -71,7 +69,7 @@
     <noscript>This viewer needs JavaScript to read local CSV files.</noscript>
   </main>
   <footer class="pageFooter">
-    <p>CSV files stay in this browser session. No uploads or saved browser data.</p>
+    <p id="privacyNotice">Your file stays in your browser without being uploaded or saved, and clears when you refresh or close the page.</p>
     <p>Made by <a href="https://amureki.me" rel="me">amureki</a>.</p>
   </footer>
   <script id="demo-csv" type="text/plain">
