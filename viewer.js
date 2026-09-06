@@ -225,7 +225,7 @@
     ui.csvScroll.scrollLeft = 0;
     render();
   }
-  function changeHTML(item) {
+  function changeHTML(item, compact = false) {
     const first = item.rows[0], last = item.rows.at(-1);
     let reason = '';
     if (first.date === last.date) reason = 'No earlier date';
@@ -235,7 +235,8 @@
     const delta = reason ? null : last.valueNum - first.valueNum;
     if (reason || !Number.isFinite(delta)) return '<small>' + esc(reason || 'Change cannot be calculated') + '</small>';
     const change = delta === 0 ? 'No change' : '<span class="visuallyHidden">' + (delta > 0 ? 'Increase of ' : 'Decrease of ') + '</span><span aria-hidden="true">' + (delta > 0 ? '↑' : '↓') + '</span> ' + numberFormat.format(Math.abs(delta));
-    return '<span class="changeValue">' + change + '</span> <small>from ' + esc(first.value) + ' · ' + displayDate(first.date) + '</small>';
+    const baseline = 'from ' + esc(first.value) + ' · ' + displayDate(first.date);
+    return '<span class="changeValue">' + change + '</span> ' + (compact ? '<small>since first</small><span class="visuallyHidden"> · ' + baseline + '</span>' : '<small>' + baseline + '</small>');
   }
   function historyTable(item) {
     const rows = item.rows.slice().reverse();
@@ -273,12 +274,13 @@
       const last = item.rows.at(-1), latest = item.rows.filter(row => row.date === last.date);
       const opened = state.expanded === item.id;
       const action = opened ? 'Hide details' : 'View ' + resultCount(item.rows.length);
+      const change = changeHTML(item, mobile.matches);
       const composition = ['total cholesterol', 'cholesterol'].includes(item.name.toLowerCase()) ? ' (HDL + non-HDL)' : '';
       const heading = previousGroup !== item.group ? '<tr class="groupRow"><td colspan="' + columns + '"><h3>' + esc(item.group) + '<span class="quiet">' + counts.get(item.group) + (counts.get(item.group) === 1 ? ' marker' : ' markers') + '</span></h3></td></tr>' : '';
       previousGroup = item.group;
       return heading + '<tr class="markerRow"><td><button type="button" class="historyButton" data-expand="' + item.id + '" aria-label="' + action + ' for ' + esc(item.name + composition + ' (' + (item.unit || 'no unit') + ')') + '" aria-expanded="' + opened + '" aria-controls="history-' + item.id + '"><span class="markerText"><span class="markerName">' + esc(item.name) + '</span>' + (composition ? '<span class="markerNote">' + composition + '</span>' : '') + '<span class="historyAction">' + action + '</span>' + (item.mixedUnits ? '<span class="markerNote">Separate unit</span>' : '') + '</span></button></td>' +
-        '<td class="numeric"><span class="latestValue"><strong class="sourceText">' + latest.map(row => row.value === '' ? '<span aria-label="Empty value">—</span>' : esc(row.value)).join('<br>') + '</strong><span class="unit">' + esc(item.unit || 'Unit not supplied') + '</span></span><small>' + displayDate(last.date) + '</small>' + (latest.length > 1 ? '<small>' + latest.length + ' results on this date</small>' : '') + '</td>' +
-        '<td class="numeric changeColumn">' + changeHTML(item) + '</td></tr>' +
+        '<td class="numeric"><span class="latestValue"><strong class="sourceText">' + latest.map(row => row.value === '' ? '<span aria-label="Empty value">—</span>' : esc(row.value)).join('<br>') + '</strong><span class="unit">' + esc(item.unit || 'Unit not supplied') + '</span></span><small>' + displayDate(last.date) + '</small>' + (latest.length > 1 ? '<small>' + latest.length + ' results on this date</small>' : '') + (mobile.matches ? '<div class="mobileChange">' + change + '</div>' : '') + '</td>' +
+        (mobile.matches ? '' : '<td class="numeric changeColumn">' + change + '</td>') + '</tr>' +
         '<tr id="history-' + item.id + '"' + (opened ? '' : ' hidden') + '><td class="expandedCell" colspan="' + columns + '">' + (opened ? historyPanel(item) : '') + '</td></tr>';
     }).join('') || '<tr><td colspan="' + columns + '">' + (!series.length ? 'No usable marker histories. Open CSV table to see the source records.' : 'No matching markers. Change or clear the search.') + '</td></tr>';
   }
