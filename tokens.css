@@ -1,0 +1,12 @@
+:root {
+  color-scheme: light dark;
+  --paper: light-dark(#ffffff, #191d1c);
+  --ink: light-dark(#202c29, #e9eeeb);
+  --muted: light-dark(#5e6c65, #aab8b0);
+  --rule: light-dark(#dce3de, #39433e);
+  --soft: light-dark(#f3f6f3, #242c27);
+  --accent: light-dark(#275d48, #9fcbb3);
+  --alert: light-dark(#963f29, #edb29d);
+  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --radius: 5px;
+}

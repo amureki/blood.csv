@@ -1,709 +1,171 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="Private, client-side viewer for blood.csv files.">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'none'; connect-src 'none'; form-action 'none'; object-src 'none'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'">
-<title>blood.csv</title>
-<style>
-  :root {
-    color-scheme: light dark;
-    --bg: Canvas; --fg: CanvasText; --muted: color-mix(in srgb, CanvasText 55%, transparent);
-    --line: color-mix(in srgb, CanvasText 16%, transparent); --soft: color-mix(in srgb, CanvasText 6%, transparent);
-    --accent:#0f766e; --bad:#dc2626; --ok:#15803d; --warn:#b45309;
-    --measure: 1180px;
-  }
-  * { box-sizing: border-box; }
-  html, body { max-width: 100%; }
-  body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.45 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; overflow-wrap: anywhere; }
-  .pageHeader { border-bottom: 1px solid var(--line); }
-  main, .bar, .shell, .footer { width: 100%; max-width: var(--measure); min-width: 0; margin: 0 auto; padding: 18px 22px; }
-  .bar { display:flex; justify-content:space-between; gap:18px; align-items:center; }
-  .importHeader { display:flex; flex-wrap:wrap; justify-content:flex-end; gap:8px 12px; align-items:center; text-align:right; }
-  .importHeader input { max-width: 270px; }
-  a { color: inherit; text-underline-offset: 2px; }
-  :focus-visible { outline: 3px solid color-mix(in srgb, var(--accent) 70%, transparent); outline-offset: 3px; }
-  .visuallyHidden { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0; }
-  .importHeader a { color: var(--muted); font-size: 13px; text-decoration:none; }
-  .importHeader a:hover { color: var(--accent); text-decoration:underline; }
-  .pageFooter { border-top: 1px solid var(--line); margin-top: 18px; }
-  .footer { color: var(--muted); font-size: 13px; }
-  .footer p { margin: 0; }
-  .emptyState { display:none; border:1px dashed var(--line); border-radius:18px; padding:28px; background:var(--soft); text-align:center; }
-  .emptyState h2 { margin-top:0; font-size:24px; }
-  .emptyState p { color:var(--muted); margin:8px auto; max-width:62ch; }
-  .emptyActions { display:flex; flex-wrap:wrap; justify-content:center; gap:10px; margin-top:18px; }
-  .emptyState code { white-space:nowrap; }
-  body.is-empty .sidebar, body.is-empty .hero, body.is-empty #dataSections { display:none; }
-  body.is-empty .emptyState { display:block; }
-  body.is-empty .shell { grid-template-columns:1fr; }
-  @media (max-width: 760px) { .bar { align-items:flex-start; flex-direction:column; } .importHeader { justify-content:flex-start; text-align:left; } }
-  main, .shell { width: 100%; max-width: var(--measure); min-width: 0; margin: 0 auto; padding: 18px 22px; }
-  .shell { display:grid; grid-template-columns: 280px minmax(0, 1fr); gap: 24px; align-items:start; }
-  h1 { margin: 0; font-size: clamp(24px, 3vw, 34px); letter-spacing: -0.035em; line-height: 1; }
-  h2 { margin: 20px 0 10px; font-size: 18px; letter-spacing: -0.015em; }
-  .sub { color: var(--muted); margin: 8px 0 0; max-width: 72ch; }
-  .sidebar { position: sticky; top: 16px; align-self:start; border:1px solid var(--line); border-radius:16px; padding:14px; background: color-mix(in srgb, Canvas 96%, CanvasText 4%); }
-  .sidebar h2 { margin:0 0 12px; font-size:15px; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; }
-  .controls { display: grid; gap: 12px; align-items: end; min-width: 0; }
-  label { display: grid; gap: 4px; font-size: 13px; color: var(--muted); font-weight: 600; min-width: 0; }
-  select, input { font: inherit; color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 9px 10px; min-height: 42px; min-width: 0; max-width: 100%; }
-  .check { display:flex; gap:8px; align-items:center; min-height:42px; color: var(--fg); font-size: 14px; min-width:0; }
-  .check input { min-height: auto; }
-  .chips { display:grid; gap:10px; margin: 14px 0 0; padding-top: 12px; border-top: 1px solid var(--line); }
-  .chipGroup { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
-  .chipGroupTitle { flex: 0 0 100%; color: var(--muted); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; margin-top:2px; }
-  button.chip, button.primaryAction { border: 1px solid var(--line); background: var(--soft); color: var(--fg); border-radius: 999px; padding: 7px 11px; font: 600 14px/1 system-ui; cursor: pointer; }
-  button.chip:hover, button.chip.active { border-color: var(--accent); color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, transparent); }
-  button.primaryAction { padding: 10px 16px; border-color: color-mix(in srgb, var(--accent) 50%, var(--line)); color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, transparent); }
-  button.primaryAction:hover { border-color: var(--accent); color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent); }
-  .content { min-width:0; }
-  .layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; min-width: 0; }
-  #dashboard { display: block; }
-  .groupSection { margin-top: 18px; }
-  .groupSection h3 { margin: 0 0 8px; font-size: 15px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
-  .trendList { display:grid; gap:6px; margin-top:8px; }
-  .trendItem { display:grid; grid-template-columns:minmax(160px,1fr) auto minmax(120px,auto) auto; gap:10px; align-items:baseline; padding:7px 10px; border:1px solid var(--line); border-radius:10px; background:var(--soft); cursor:pointer; }
-  .trendItem:hover { border-color: var(--accent); }
-  .trendItem:focus-visible { border-color: var(--accent); outline: 3px solid color-mix(in srgb, var(--accent) 70%, transparent); outline-offset: 3px; }
-  .trendItem strong { font-size:14px; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .trendItem .value { font-weight:720; font-variant-numeric:tabular-nums; }
-  .trendItem .change, .trendItem small { color:var(--muted); text-align:right; }
-  @media (max-width: 620px) { .trendItem { grid-template-columns:1fr auto; } .trendItem .change, .trendItem small { grid-column:1 / -1; text-align:left; } }
-  .panel { border: 1px solid var(--line); border-radius: 16px; background: color-mix(in srgb, Canvas 96%, CanvasText 4%); min-width: 0; }
-  .panel { padding: 14px; }
-  .hero { border-color: color-mix(in srgb, var(--accent) 25%, var(--line)); }
-  .panel header { position: static; backdrop-filter:none; background:transparent; border:0; display:flex; justify-content:space-between; gap:12px; align-items:baseline; padding:0 0 8px; min-width:0; }
-  .panel h3 { margin:0; font-size: 16px; letter-spacing: -0.01em; }
-  .unit { color: var(--muted); font-size: 13px; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .heroMeta { display:flex; flex-wrap:wrap; gap:6px 10px; margin:4px 0 8px; color:var(--muted); font-size:14px; align-items:baseline; }
-  .heroMeta strong { color:var(--fg); font-size:18px; font-variant-numeric:tabular-nums; }
-  .heroMeta .high { color:var(--bad); font-weight:700; }
-  .high { color: var(--bad); font-weight: 700; }
-  .warn { color: var(--warn); font-weight: 700; }
-  .badge { display:inline-block; border-radius:999px; padding:2px 7px; font-size:12px; font-weight:700; background:var(--soft); color:var(--muted); vertical-align:middle; }
-  .badge.high { background: color-mix(in srgb, var(--bad) 12%, transparent); color: var(--bad); }
-  .delta { color: var(--muted); font-variant-numeric: tabular-nums; }
-  svg { width: 100%; max-width: 100%; height: 250px; display:block; overflow: hidden; }
-  svg text { font-variant-numeric: tabular-nums; }
-  .hero svg { height: 300px; }
-  .note { color: var(--muted); font-size: 13px; margin-top: 6px; }
-  .help { margin-top: 10px; padding: 10px 12px; border-radius: 12px; background: var(--soft); color: var(--muted); font-size: 14px; }
-  .help summary { cursor:pointer; color: var(--fg); font-weight:700; }
-  .help strong { color: var(--fg); }
-  .importStatus { flex-basis:100%; color: var(--muted); font-size: 13px; }
-  .importStatus.error { color: var(--bad); font-weight: 700; }
-
-  .summaryLine { color: var(--muted); font-size: 14px; line-height: 1.5; }
-  .summaryLine strong { color: var(--fg); }
-  .attentionList { display:grid; gap:6px; }
-  .attentionItem { display:grid; grid-template-columns:minmax(120px,1fr) auto minmax(120px,auto); gap:10px; align-items:baseline; padding:7px 10px; border:1px solid var(--line); border-radius:10px; background:var(--soft); }
-  .attentionItem[data-analyte] { cursor:pointer; }
-  .attentionItem:hover { border-color: var(--accent); }
-  .attentionItem:focus-visible { border-color: var(--accent); outline: 3px solid color-mix(in srgb, var(--accent) 70%, transparent); outline-offset: 3px; }
-  .attentionItem strong { font-size:14px; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .attentionItem .value { font-weight:720; color:var(--bad); font-variant-numeric:tabular-nums; }
-  .attentionItem small { color:var(--muted); text-align:right; }
-  @media (max-width: 520px) { .attentionItem { grid-template-columns:1fr auto; } .attentionItem small { grid-column:1 / -1; text-align:left; } }
-  .tableWrap { max-width: 100%; overflow:auto; border: 1px solid var(--line); border-radius: 16px; }
-  table { width: 100%; min-width: 680px; border-collapse: collapse; font-size: 14px; }
-  th, td { border-bottom: 1px solid var(--line); padding: 8px 10px; text-align: left; vertical-align: top; }
-  th { position: sticky; top: 0; background: Canvas; font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
-  tr:hover td { background: var(--soft); }
-  code { background: var(--soft); padding: 1px 5px; border-radius: 5px; }
-  @media (max-width: 900px) { .shell { grid-template-columns: 1fr; gap: 12px; } .sidebar { position: static; } .chips { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); } }
-  @media (max-width: 760px) { main,.bar,.shell{padding:16px;} .hero svg{height:260px;} }
-  @media (max-width: 430px) { body{font-size:15px;} main,.bar,.shell{padding:14px 12px;} .chips{gap:8px;} button.chip{font-size:13px; padding:7px 9px;} .hero svg{height:240px;} svg{height:220px;} }
-</style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Private, local blood test history and CSV viewer.">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'none'; connect-src 'none'; form-action 'none'; object-src 'none'; img-src 'self' data:; style-src 'self'; script-src 'self'">
+  <title>blood.csv</title>
+  <link rel="stylesheet" href="tokens.css">
+  <link rel="stylesheet" href="viewer.css">
+  <script src="viewer.js" defer></script>
 </head>
 <body>
-<header class="pageHeader">
-  <div class="bar">
-    <div>
-      <h1><span aria-hidden="true">🩸</span> blood.csv</h1>
-      <p class="sub">Private local viewer for blood test trends.</p>
+  <a class="skipLink" href="#main">Skip to results</a>
+  <header class="pageHeader">
+    <div class="bar">
+      <span class="wordmark">blood.csv</span>
+      <span class="privacyLabel">Local files · session only</span>
+      <button id="importButton" type="button">Import CSV</button>
+      <input id="csvFile" type="file" accept=".csv,text/csv" aria-label="Choose CSV file" hidden>
     </div>
-    <div class="importHeader" aria-label="Import data">
-      <label class="visuallyHidden" for="csvFile">Import CSV file</label>
-      <input id="csvFile" type="file" accept=".csv,text/csv" aria-describedby="importStatus">
-      <a href="examples/blood.csv" download>Example CSV</a>
-      <div id="importStatus" class="importStatus" role="status" aria-live="polite">No data loaded.</div>
-    </div>
-  </div>
-</header>
-
-<div class="shell">
-  <aside class="sidebar">
-    <h2>Navigate</h2>
-    <div class="controls">
-      <label>Jump to analyte <select id="analyte"></select></label>
-      <label class="check"><input id="useDefaults" type="checkbox" checked> show guideline lines</label>
-    </div>
-    <nav class="chips" id="chips" aria-label="Quick analyte jumps"></nav>
-  </aside>
-
-  <main class="content">
-  <section class="layout">
-    <div class="emptyState" id="emptyState">
-      <h2>Import your CSV to start</h2>
-      <p>This viewer runs fully in your browser. Choose your private blood.csv file in the header; it will be shown here for this session only.</p>
-      <p>Need a starting point? Download <code>examples/blood.csv</code>, keep the header, and replace the sample rows.</p>
-      <div class="emptyActions">
-        <button id="demoButton" class="primaryAction" type="button">Load demo data</button>
+  </header>
+  <main id="main" class="workspace">
+    <p id="importStatus" class="fileStatus" role="status" aria-live="polite">No data loaded.</p>
+    <section id="welcome" class="welcome" aria-labelledby="welcomeTitle">
+      <h1 id="welcomeTitle">Your blood test history</h1>
+      <p>Import a CSV to review your markers and their full history, or read every source record in a plain table.</p>
+      <p class="quiet">Your file stays in this browser session. Refreshing or closing the page clears the data.</p>
+      <div class="welcomeActions">
+        <button id="startButton" class="primary" type="button">Import CSV</button>
+        <button id="demoButton" type="button">Load demo data</button>
+        <a href="examples/blood.csv" download>Download example CSV</a>
       </div>
-    </div>
-
-    <div class="panel hero">
-      <header><h3 id="heroTitle">Selected analyte</h3><span class="unit" id="chartNote"></span></header>
-      <div class="heroMeta" id="selectedStats"></div>
-      <svg id="chart" viewBox="0 0 900 340" role="img" aria-label="selected analyte trend chart"></svg>
-      <p class="note" id="chartSummary"></p>
-      <details class="help" id="analyteHelp"></details>
-    </div>
-
-    <div id="dataSections">
-    <div class="panel">
-      <header><h3>Summary</h3><span class="unit">What changed / what matters</span></header>
-      <div id="globalHighlights"></div>
-    </div>
-
-    <section>
-      <h2>Currently flagged</h2>
-      <div class="attentionList" id="attentionCards"></div>
     </section>
-
-    <section>
-      <h2>Grouped trends</h2>
-      <div class="dashboard" id="dashboard"></div>
-    </section>
-
-    <section>
-      <details>
-        <summary><h2 style="display:inline">Reports</h2></summary>
-        <p class="note">One row per report/date. Use this as the audit trail; the tables below are the accessible text alternative to the charts.</p>
-        <div class="tableWrap"><table id="reportsTable"></table></div>
-      </details>
-      <details style="margin-top:12px">
-        <summary class="note" style="cursor:pointer">Raw parsed rows</summary>
-        <div class="tableWrap" style="margin-top:8px"><table id="table"></table></div>
-      </details>
-    </section>
+    <div id="loaded" hidden>
+      <div class="heading"><h1>Your blood test history</h1><p id="coverage" class="quiet"></p></div>
+      <p id="dataNotice" class="dataNotice" hidden></p>
+      <nav class="viewNav" aria-label="Views">
+        <button type="button" data-view="results" aria-controls="resultsView" aria-current="page">Results</button>
+        <button type="button" data-view="csv" aria-controls="csvView">CSV table</button>
+      </nav>
+      <section id="resultsView" aria-labelledby="resultsTitle">
+        <h2 id="resultsTitle" class="visuallyHidden">Results</h2>
+        <div class="toolbar">
+          <label><span class="visuallyHidden">Find a marker or group</span><input id="search" type="search" placeholder="Find a marker or group"></label>
+        </div>
+        <p class="quiet" id="resultCount" aria-live="polite"></p>
+        <table id="resultsTable" class="resultsTable" aria-label="Latest results by marker and unit">
+          <colgroup><col><col class="latestColumn"><col class="changeColumn"></colgroup>
+          <thead><tr><th scope="col">Marker</th><th scope="col" class="numeric">Latest result</th><th scope="col" class="numeric changeColumn">Since first</th></tr></thead>
+          <tbody id="resultsBody"></tbody>
+        </table>
+      </section>
+      <section id="csvView" aria-labelledby="csvTitle" hidden>
+        <div class="sectionHeading"><h2 id="csvTitle">CSV table</h2><span class="quiet">Every source record</span></div>
+        <div class="toolbar">
+          <label>Search table<input id="csvSearch" type="search" placeholder="Marker, date, lab or text"></label>
+          <label>Row order<select id="csvOrder"><option value="source">File order</option><option value="newest">Newest first</option><option value="oldest">Oldest first</option><option value="marker">Marker A–Z</option></select></label>
+        </div>
+        <p class="quiet" id="csvCount" aria-live="polite"></p>
+        <div id="scrollTools" class="scrollTools">
+          <span class="quiet">Scroll sideways for more columns</span>
+          <div><button type="button" id="scrollLeft" aria-label="Scroll table left">←</button><button type="button" id="scrollRight" aria-label="Scroll table right">→</button></div>
+        </div>
+        <div id="csvScroll" class="csvScroll" tabindex="0" role="region" aria-label="CSV records, scroll horizontally for all columns">
+          <table id="csvTable" class="sourceTable" aria-label="CSV source records"><thead id="csvHead"></thead><tbody id="csvBody"></tbody></table>
+        </div>
+        <p class="quiet">Blank cells are empty in the CSV. Values and report text are shown as supplied.</p>
+      </section>
     </div>
-  </section>
+    <noscript>This viewer needs JavaScript to read local CSV files.</noscript>
   </main>
-</div>
-
-<script id="csv" type="text/plain">
-date,lab,analyte,value,unit,ref_text,flag,notes
+  <footer class="pageFooter">
+    <p>CSV files stay in this browser session. No uploads or saved browser data.</p>
+    <p>Made by <a href="https://amureki.me" rel="me">amureki</a>.</p>
+  </footer>
+  <script id="demo-csv" type="text/plain">
+date,source_date,source_file,lab,analyte,original_name,value,unit
+2023-01-10,2023-01-10,example-report-2023-01-10.pdf,Example Clinic,ALT,ALT,24,U/l
+2023-01-10,2023-01-10,example-report-2023-01-10.pdf,Example Clinic,AST,AST,21,U/l
+2023-01-10,2023-01-10,example-report-2023-01-10.pdf,Example Clinic,BMI,BMI,25.1,kg/m2
+2023-01-10,2023-01-10,example-report-2023-01-10.pdf,Example Clinic,Creatinine,Creatinine,0.91,mg/dl
+2023-01-10,2023-01-10,example-report-2023-01-10.pdf,Example Clinic,Gamma-GT,Gamma-GT,19,U/l
+2023-01-10,2023-01-10,example-report-2023-01-10.pdf,Example Clinic,HDL,HDL,55,mg/dl
+2023-01-10,2023-01-10,example-report-2023-01-10.pdf,Example Clinic,LDL,LDL,116,mg/dl
+2023-01-10,2023-01-10,example-report-2023-01-10.pdf,Example Clinic,Total cholesterol,Total cholesterol,188,mg/dl
+2023-01-10,2023-01-10,example-report-2023-01-10.pdf,Example Clinic,Triglycerides,Triglycerides,84,mg/dl
+2023-01-10,2023-01-10,example-report-2023-01-10.pdf,Example Clinic,Weight,Weight,81.2,kg
+2023-01-10,2023-01-10,example-report-2023-01-10.pdf,Example Clinic,eGFR,eGFR,108,ml/min/1.73m2
+2023-06-22,2023-06-22,example-report-2023-06-22.pdf,Example Clinic,ALT,ALT,31,U/l
+2023-06-22,2023-06-22,example-report-2023-06-22.pdf,Example Clinic,Creatinine,Creatinine,0.98,mg/dl
+2023-06-22,2023-06-22,example-report-2023-06-22.pdf,Example Clinic,Gamma-GT,Gamma-GT,25,U/l
+2023-06-22,2023-06-22,example-report-2023-06-22.pdf,Example Clinic,Glucose,Glucose,88,mg/dl
+2023-06-22,2023-06-22,example-report-2023-06-22.pdf,Example Clinic,HDL,HDL,52,mg/dl
+2023-06-22,2023-06-22,example-report-2023-06-22.pdf,Example Clinic,LDL,LDL,129,mg/dl
+2023-06-22,2023-06-22,example-report-2023-06-22.pdf,Example Clinic,Non-HDL,Non-HDL,151,mg/dl
+2023-06-22,2023-06-22,example-report-2023-06-22.pdf,Example Clinic,Total cholesterol,Total cholesterol,203,mg/dl
+2023-06-22,2023-06-22,example-report-2023-06-22.pdf,Example Clinic,Triglycerides,Triglycerides,111,mg/dl
+2023-12-05,2023-12-05,example-report-2023-12-05.pdf,Example Clinic,ALT,ALT,48,U/l
+2023-12-05,2023-12-05,example-report-2023-12-05.pdf,Example Clinic,AST,AST,34,U/l
+2023-12-05,2023-12-05,example-report-2023-12-05.pdf,Example Clinic,Creatinine,Creatinine,1.05,mg/dl
+2023-12-05,2023-12-05,example-report-2023-12-05.pdf,Example Clinic,Gamma-GT,Gamma-GT,38,U/l
+2023-12-05,2023-12-05,example-report-2023-12-05.pdf,Example Clinic,HDL,HDL,50,mg/dl
+2023-12-05,2023-12-05,example-report-2023-12-05.pdf,Example Clinic,LDL,LDL,141,mg/dl
+2023-12-05,2023-12-05,example-report-2023-12-05.pdf,Example Clinic,Non-HDL,Non-HDL,167,mg/dl
+2023-12-05,2023-12-05,example-report-2023-12-05.pdf,Example Clinic,Total cholesterol,Total cholesterol,217,mg/dl
+2023-12-05,2023-12-05,example-report-2023-12-05.pdf,Example Clinic,Triglycerides,Triglycerides,176,mg/dl
+2023-12-05,2023-12-05,example-report-2023-12-05.pdf,Example Clinic,Uric acid,Uric acid,5.1,mg/dl
+2023-12-05,2023-12-05,example-report-2023-12-05.pdf,Example Clinic,eGFR,eGFR,96,ml/min/1.73m2
+2024-05-18,2024-05-18,example-report-2024-05-18.pdf,Example Clinic,ALT,ALT,36,U/l
+2024-05-18,2024-05-18,example-report-2024-05-18.pdf,Example Clinic,AST,AST,26,U/l
+2024-05-18,2024-05-18,example-report-2024-05-18.pdf,Example Clinic,BMI,BMI,24.6,kg/m2
+2024-05-18,2024-05-18,example-report-2024-05-18.pdf,Example Clinic,Creatinine,Creatinine,0.96,mg/dl
+2024-05-18,2024-05-18,example-report-2024-05-18.pdf,Example Clinic,Ferritin,Ferritin,64,ng/ml
+2024-05-18,2024-05-18,example-report-2024-05-18.pdf,Example Clinic,Gamma-GT,Gamma-GT,30,U/l
+2024-05-18,2024-05-18,example-report-2024-05-18.pdf,Example Clinic,Glucose,Glucose,101,mg/dl
+2024-05-18,2024-05-18,example-report-2024-05-18.pdf,Example Clinic,HDL,HDL,57,mg/dl
+2024-05-18,2024-05-18,example-report-2024-05-18.pdf,Example Clinic,Hematocrit,Hematocrit,43.9,%
+2024-05-18,2024-05-18,example-report-2024-05-18.pdf,Example Clinic,Hemoglobin,Hemoglobin,14.8,g/dl
+2024-05-18,2024-05-18,example-report-2024-05-18.pdf,Example Clinic,LDL,LDL,135,mg/dl
+2024-05-18,2024-05-18,example-report-2024-05-18.pdf,Example Clinic,Non-HDL,Non-HDL,152,mg/dl
+2024-05-18,2024-05-18,example-report-2024-05-18.pdf,Example Clinic,Platelets,Platelets,238,Gpt/l
+2024-05-18,2024-05-18,example-report-2024-05-18.pdf,Example Clinic,Potassium,Potassium,4.4,mmol/l
+2024-05-18,2024-05-18,example-report-2024-05-18.pdf,Example Clinic,Red blood cells (RBC),Red blood cells (RBC),4.88,Tpt/l
+2024-05-18,2024-05-18,example-report-2024-05-18.pdf,Example Clinic,Sodium,Sodium,140,mmol/l
+2024-05-18,2024-05-18,example-report-2024-05-18.pdf,Example Clinic,Total cholesterol,Total cholesterol,209,mg/dl
+2024-05-18,2024-05-18,example-report-2024-05-18.pdf,Example Clinic,Triglycerides,Triglycerides,95,mg/dl
+2024-05-18,2024-05-18,example-report-2024-05-18.pdf,Example Clinic,Weight,Weight,79.6,kg
+2024-05-18,2024-05-18,example-report-2024-05-18.pdf,Example Clinic,White blood cells (WBC),White blood cells (WBC),6850,/µl
+2024-05-18,2024-05-18,example-report-2024-05-18.pdf,Example Clinic,eGFR,eGFR,103,ml/min/1.73m2
+2024-10-30,2024-10-30,example-report-2024-10-30.pdf,Example Clinic,ALT,ALT,41,U/l
+2024-10-30,2024-10-30,example-report-2024-10-30.pdf,Example Clinic,Creatinine,Creatinine,0.94,mg/dl
+2024-10-30,2024-10-30,example-report-2024-10-30.pdf,Example Clinic,Gamma-GT,Gamma-GT,27,U/l
+2024-10-30,2024-10-30,example-report-2024-10-30.pdf,Example Clinic,HDL,HDL,60,mg/dl
+2024-10-30,2024-10-30,example-report-2024-10-30.pdf,Example Clinic,LDL,LDL,122,mg/dl
+2024-10-30,2024-10-30,example-report-2024-10-30.pdf,Example Clinic,Non-HDL,Non-HDL,138,mg/dl
+2024-10-30,2024-10-30,example-report-2024-10-30.pdf,Example Clinic,TSH,TSH,1.3,µU/ml
+2024-10-30,2024-10-30,example-report-2024-10-30.pdf,Example Clinic,Total cholesterol,Total cholesterol,198,mg/dl
+2024-10-30,2024-10-30,example-report-2024-10-30.pdf,Example Clinic,Triglycerides,Triglycerides,82,mg/dl
+2024-10-30,2024-10-30,example-report-2024-10-30.pdf,Example Clinic,Uric acid,Uric acid,5.7,mg/dl
+2024-10-30,2024-10-30,example-report-2024-10-30.pdf,Example Clinic,eGFR,eGFR,106,ml/min/1.73m2
+2025-04-14,2025-04-14,example-report-2025-04-14.pdf,Example Clinic,ALT,ALT,29,U/l
+2025-04-14,2025-04-14,example-report-2025-04-14.pdf,Example Clinic,AST,AST,23,U/l
+2025-04-14,2025-04-14,example-report-2025-04-14.pdf,Example Clinic,Glucose,Glucose,94,mg/dl
+2025-04-14,2025-04-14,example-report-2025-04-14.pdf,Example Clinic,Triglycerides,Triglycerides,143,mg/dl
+2025-11-03,2025-11-03,example-report-2025-11-03.pdf,Example Clinic,ALT,ALT,27,U/l
+2025-11-03,2025-11-03,example-report-2025-11-03.pdf,Example Clinic,AST,AST,22,U/l
+2025-11-03,2025-11-03,example-report-2025-11-03.pdf,Example Clinic,BMI,BMI,24.1,kg/m2
+2025-11-03,2025-11-03,example-report-2025-11-03.pdf,Example Clinic,Creatinine,Creatinine,0.9,mg/dl
+2025-11-03,2025-11-03,example-report-2025-11-03.pdf,Example Clinic,Ferritin,Ferritin,78,ng/ml
+2025-11-03,2025-11-03,example-report-2025-11-03.pdf,Example Clinic,Gamma-GT,Gamma-GT,24,U/l
+2025-11-03,2025-11-03,example-report-2025-11-03.pdf,Example Clinic,Glucose,Glucose,90,mg/dl
+2025-11-03,2025-11-03,example-report-2025-11-03.pdf,Example Clinic,HDL,HDL,62,mg/dl
+2025-11-03,2025-11-03,example-report-2025-11-03.pdf,Example Clinic,Hematocrit,Hematocrit,44.7,%
+2025-11-03,2025-11-03,example-report-2025-11-03.pdf,Example Clinic,Hemoglobin,Hemoglobin,15.1,g/dl
+2025-11-03,2025-11-03,example-report-2025-11-03.pdf,Example Clinic,LDL,LDL,113,mg/dl
+2025-11-03,2025-11-03,example-report-2025-11-03.pdf,Example Clinic,Non-HDL,Non-HDL,129,mg/dl
+2025-11-03,2025-11-03,example-report-2025-11-03.pdf,Example Clinic,Platelets,Platelets,251,Gpt/l
+2025-11-03,2025-11-03,example-report-2025-11-03.pdf,Example Clinic,Potassium,Potassium,4.2,mmol/l
+2025-11-03,2025-11-03,example-report-2025-11-03.pdf,Example Clinic,Red blood cells (RBC),Red blood cells (RBC),4.95,Tpt/l
+2025-11-03,2025-11-03,example-report-2025-11-03.pdf,Example Clinic,Sodium,Sodium,141,mmol/l
+2025-11-03,2025-11-03,example-report-2025-11-03.pdf,Example Clinic,TSH,TSH,1.6,µU/ml
+2025-11-03,2025-11-03,example-report-2025-11-03.pdf,Example Clinic,Total cholesterol,Total cholesterol,191,mg/dl
+2025-11-03,2025-11-03,example-report-2025-11-03.pdf,Example Clinic,Triglycerides,Triglycerides,74,mg/dl
+2025-11-03,2025-11-03,example-report-2025-11-03.pdf,Example Clinic,Uric acid,Uric acid,5.3,mg/dl
+2025-11-03,2025-11-03,example-report-2025-11-03.pdf,Example Clinic,Weight,Weight,77.8,kg
+2025-11-03,2025-11-03,example-report-2025-11-03.pdf,Example Clinic,White blood cells (WBC),White blood cells (WBC),6120,/µl
+2025-11-03,2025-11-03,example-report-2025-11-03.pdf,Example Clinic,eGFR,eGFR,111,ml/min/1.73m2
 </script>
-<script id="demo-csv" type="text/plain">
-date,lab,analyte,value,unit,ref_text,flag,notes
-2023-01-10,Example Clinic,ALT,24,U/l,<45,,Synthetic sample row
-2023-01-10,Example Clinic,AST,21,U/l,<35,,Synthetic sample row
-2023-01-10,Example Clinic,BMI,25.1,kg/m2,18.5-25.0,high_borderline,Synthetic sample row
-2023-01-10,Example Clinic,Creatinine,0.91,mg/dl,0.70-1.20,,Synthetic sample row
-2023-01-10,Example Clinic,Gamma-GT,19,U/l,<60,,Synthetic sample row
-2023-01-10,Example Clinic,HDL,55,mg/dl,>40,,Synthetic sample row
-2023-01-10,Example Clinic,LDL,116,mg/dl,risk-adapted,,Synthetic sample row
-2023-01-10,Example Clinic,Total cholesterol,188,mg/dl,<200,,Synthetic sample row
-2023-01-10,Example Clinic,Triglycerides,84,mg/dl,<150,,Synthetic sample row
-2023-01-10,Example Clinic,Weight,81.2,kg,,,Synthetic sample row
-2023-01-10,Example Clinic,eGFR,108,ml/min/1.73m2,>60,,Synthetic sample row
-2023-06-22,Example Clinic,ALT,31,U/l,<45,,Synthetic sample row
-2023-06-22,Example Clinic,Creatinine,0.98,mg/dl,0.70-1.20,,Synthetic sample row
-2023-06-22,Example Clinic,Gamma-GT,25,U/l,<60,,Synthetic sample row
-2023-06-22,Example Clinic,Glucose,88,mg/dl,60-110,,Synthetic sample row
-2023-06-22,Example Clinic,HDL,52,mg/dl,>40,,Synthetic sample row
-2023-06-22,Example Clinic,LDL,129,mg/dl,risk-adapted,high_borderline,Synthetic sample row
-2023-06-22,Example Clinic,Non-HDL,151,mg/dl,risk-adapted,high,Synthetic sample row
-2023-06-22,Example Clinic,Total cholesterol,203,mg/dl,<200,high_borderline,Synthetic sample row
-2023-06-22,Example Clinic,Triglycerides,111,mg/dl,<150,,Synthetic sample row
-2023-12-05,Example Clinic,ALT,48,U/l,<45,high,Synthetic sample row
-2023-12-05,Example Clinic,AST,34,U/l,<35,,Synthetic sample row
-2023-12-05,Example Clinic,Creatinine,1.05,mg/dl,0.70-1.20,,Synthetic sample row
-2023-12-05,Example Clinic,Gamma-GT,38,U/l,<60,,Synthetic sample row
-2023-12-05,Example Clinic,HDL,50,mg/dl,>40,,Synthetic sample row
-2023-12-05,Example Clinic,LDL,141,mg/dl,risk-adapted,high,Synthetic sample row
-2023-12-05,Example Clinic,Non-HDL,167,mg/dl,risk-adapted,high,Synthetic sample row
-2023-12-05,Example Clinic,Total cholesterol,217,mg/dl,<200,high,Synthetic sample row
-2023-12-05,Example Clinic,Triglycerides,176,mg/dl,<150,high,Synthetic sample row
-2023-12-05,Example Clinic,Uric acid,5.1,mg/dl,3.4-7.0,,Synthetic sample row
-2023-12-05,Example Clinic,eGFR,96,ml/min/1.73m2,>60,,Synthetic sample row
-2024-05-18,Example Clinic,ALT,36,U/l,<45,,Synthetic sample row
-2024-05-18,Example Clinic,AST,26,U/l,<35,,Synthetic sample row
-2024-05-18,Example Clinic,BMI,24.6,kg/m2,18.5-25.0,,Synthetic sample row
-2024-05-18,Example Clinic,Creatinine,0.96,mg/dl,0.70-1.20,,Synthetic sample row
-2024-05-18,Example Clinic,Ferritin,64,ng/ml,30-400,,Synthetic sample row
-2024-05-18,Example Clinic,Gamma-GT,30,U/l,<60,,Synthetic sample row
-2024-05-18,Example Clinic,Glucose,101,mg/dl,60-110,,Synthetic sample row
-2024-05-18,Example Clinic,HDL,57,mg/dl,>40,,Synthetic sample row
-2024-05-18,Example Clinic,Hematocrit,43.9,%,40-52,,Synthetic sample row
-2024-05-18,Example Clinic,Hemoglobin,14.8,g/dl,13.5-17.5,,Synthetic sample row
-2024-05-18,Example Clinic,LDL,135,mg/dl,risk-adapted,high,Synthetic sample row
-2024-05-18,Example Clinic,Non-HDL,152,mg/dl,risk-adapted,high,Synthetic sample row
-2024-05-18,Example Clinic,Platelets,238,Gpt/l,150-400,,Synthetic sample row
-2024-05-18,Example Clinic,Potassium,4.4,mmol/l,3.5-5.1,,Synthetic sample row
-2024-05-18,Example Clinic,Red blood cells (RBC),4.88,Tpt/l,4.40-5.80,,Synthetic sample row
-2024-05-18,Example Clinic,Sodium,140,mmol/l,136-145,,Synthetic sample row
-2024-05-18,Example Clinic,Total cholesterol,209,mg/dl,<200,high,Synthetic sample row
-2024-05-18,Example Clinic,Triglycerides,95,mg/dl,<150,,Synthetic sample row
-2024-05-18,Example Clinic,Weight,79.6,kg,,,Synthetic sample row
-2024-05-18,Example Clinic,White blood cells (WBC),6850,/µl,4000-11000,,Synthetic sample row
-2024-05-18,Example Clinic,eGFR,103,ml/min/1.73m2,>60,,Synthetic sample row
-2024-10-30,Example Clinic,ALT,41,U/l,<45,,Synthetic sample row
-2024-10-30,Example Clinic,Creatinine,0.94,mg/dl,0.70-1.20,,Synthetic sample row
-2024-10-30,Example Clinic,Gamma-GT,27,U/l,<60,,Synthetic sample row
-2024-10-30,Example Clinic,HDL,60,mg/dl,>40,,Synthetic sample row
-2024-10-30,Example Clinic,LDL,122,mg/dl,risk-adapted,high_borderline,Synthetic sample row
-2024-10-30,Example Clinic,Non-HDL,138,mg/dl,risk-adapted,,Synthetic sample row
-2024-10-30,Example Clinic,TSH,1.3,µU/ml,0.40-4.00,,Synthetic sample row
-2024-10-30,Example Clinic,Total cholesterol,198,mg/dl,<200,,Synthetic sample row
-2024-10-30,Example Clinic,Triglycerides,82,mg/dl,<150,,Synthetic sample row
-2024-10-30,Example Clinic,Uric acid,5.7,mg/dl,3.4-7.0,,Synthetic sample row
-2024-10-30,Example Clinic,eGFR,106,ml/min/1.73m2,>60,,Synthetic sample row
-2025-04-14,Example Clinic,ALT,29,U/l,<45,,Synthetic sample row
-2025-04-14,Example Clinic,AST,23,U/l,<35,,Synthetic sample row
-2025-04-14,Example Clinic,Glucose,94,mg/dl,60-110,,Synthetic sample row
-2025-04-14,Example Clinic,Triglycerides,143,mg/dl,<150,,Synthetic sample row
-2025-11-03,Example Clinic,ALT,27,U/l,<45,,Synthetic sample row
-2025-11-03,Example Clinic,AST,22,U/l,<35,,Synthetic sample row
-2025-11-03,Example Clinic,BMI,24.1,kg/m2,18.5-25.0,,Synthetic sample row
-2025-11-03,Example Clinic,Creatinine,0.9,mg/dl,0.70-1.20,,Synthetic sample row
-2025-11-03,Example Clinic,Ferritin,78,ng/ml,30-400,,Synthetic sample row
-2025-11-03,Example Clinic,Gamma-GT,24,U/l,<60,,Synthetic sample row
-2025-11-03,Example Clinic,Glucose,90,mg/dl,60-110,,Synthetic sample row
-2025-11-03,Example Clinic,HDL,62,mg/dl,>40,,Synthetic sample row
-2025-11-03,Example Clinic,Hematocrit,44.7,%,40-52,,Synthetic sample row
-2025-11-03,Example Clinic,Hemoglobin,15.1,g/dl,13.5-17.5,,Synthetic sample row
-2025-11-03,Example Clinic,LDL,113,mg/dl,risk-adapted,,Synthetic sample row
-2025-11-03,Example Clinic,Non-HDL,129,mg/dl,risk-adapted,,Synthetic sample row
-2025-11-03,Example Clinic,Platelets,251,Gpt/l,150-400,,Synthetic sample row
-2025-11-03,Example Clinic,Potassium,4.2,mmol/l,3.5-5.1,,Synthetic sample row
-2025-11-03,Example Clinic,Red blood cells (RBC),4.95,Tpt/l,4.40-5.80,,Synthetic sample row
-2025-11-03,Example Clinic,Sodium,141,mmol/l,136-145,,Synthetic sample row
-2025-11-03,Example Clinic,TSH,1.6,µU/ml,0.40-4.00,,Synthetic sample row
-2025-11-03,Example Clinic,Total cholesterol,191,mg/dl,<200,,Synthetic sample row
-2025-11-03,Example Clinic,Triglycerides,74,mg/dl,<150,,Synthetic sample row
-2025-11-03,Example Clinic,Uric acid,5.3,mg/dl,3.4-7.0,,Synthetic sample row
-2025-11-03,Example Clinic,Weight,77.8,kg,,,Synthetic sample row
-2025-11-03,Example Clinic,White blood cells (WBC),6120,/µl,4000-11000,,Synthetic sample row
-2025-11-03,Example Clinic,eGFR,111,ml/min/1.73m2,>60,,Synthetic sample row
-</script>
-<script id="baselines" type="text/plain">
-analyte,unit,low,high,target,source,note
-LDL,mg/dl,,116,<116,ESC/EAS low-risk target,Target depends on overall cardiovascular risk
-Non-HDL,mg/dl,,146,<146,ESC/EAS low-risk target,Often used alongside LDL
-Total cholesterol,mg/dl,,200,<200,Common adult reference,Broad screening threshold
-Triglycerides,mg/dl,,150,<150,Common fasting target,Non-fasting values can be higher
-HDL,mg/dl,40,,>40,Common male target,Interpreted as part of the lipid profile
-ALT,U/l,,50,<50,Common adult male reference,Lab-specific; some labs use lower upper limits
-AST,U/l,,50,<50,Common adult reference,Lab-specific
-Gamma-GT,U/l,8,61,8-61,Common adult male reference,Lab-specific
-Creatinine,mg/dl,0.70,1.20,0.70-1.20,Common adult male reference,"Interpret with eGFR, muscle mass, hydration"
-eGFR,ml/min/1.73m2,60,,>60,CKD-EPI reporting convention,Repeated results and urine findings matter
-Creatine kinase (CK),U/l,,190,<190,Common reference,Recent strenuous exercise can temporarily raise CK
-Glucose,mg/dl,60,110,60-110,Common fasting reference,Diagnostic thresholds depend on fasting status and method
-Uric acid,mg/dl,3.4,7.0,3.4-7.0,Common adult male reference,Target can be lower in gout
-Ferritin,ng/ml,30,400,30-400,Common adult male reference,Reflects iron stores and can rise with inflammation
-TSH,µU/ml,0.40,4.00,0.40-4.00,Common adult reference,Lab/clinical context matters
-BMI,kg/m2,18.5,25.0,18.5-25.0,WHO adult category,Not a blood marker; rough population measure
-</script>
-<script>
-const embeddedCsvText = document.getElementById('csv').textContent.trim();
-const requiredColumns = ['date','analyte','value','unit'];
-const expectedColumns = ['date','source_date','source_file','source_type','lab','analyte','original_name','value','unit','ref_low','ref_high','ref_text','flag','notes'];
-let data = [];
-let analytes = [];
-let rowsByAnalyte = new Map();
-let latestCache = [];
-let latestDate = '';
-const groups = {
-  'Lipids / cardiovascular': ['LDL','HDL','Triglycerides','Non-HDL','Total cholesterol'],
-  'Liver': ['ALT','AST','Gamma-GT','LDH'],
-  'Kidney / metabolism': ['eGFR','Creatinine','Urea','Uric acid'],
-  'Blood count': ['White blood cells (WBC)','Red blood cells (RBC)','Hemoglobin','Hematocrit','MCV','MCH','MCHC','RDW','Platelets'],
-  'Electrolytes': ['Sodium','Potassium'],
-  'Thyroid': ['TSH'],
-  'Iron': ['Ferritin'],
-  'Glucose': ['Glucose'],
-  'Body': ['Weight','Height','BMI'],
-  'Muscle': ['Creatine kinase (CK)'],
-};
-const quickGroups = {
-  'Lipids': ['LDL','HDL','Triglycerides','Non-HDL','Total cholesterol'],
-  'Liver': ['ALT','AST','Gamma-GT'],
-  'Kidney': ['Creatinine','eGFR'],
-  'Other': ['Creatine kinase (CK)','TSH','Ferritin'],
-};
-const dashboardGroups = ['Lipids / cardiovascular', 'Liver', 'Kidney / metabolism', 'Blood count'];
-const displayPriority = [
-  'LDL','HDL','Triglycerides','Non-HDL','Total cholesterol',
-  'ALT','AST','Gamma-GT','LDH',
-  'eGFR','Creatinine','Urea','Uric acid',
-  'Creatine kinase (CK)','Glucose','TSH','Ferritin',
-  'White blood cells (WBC)','Red blood cells (RBC)','Hemoglobin','Hematocrit','MCV','MCH','MCHC','RDW','Platelets',
-  'Sodium','Potassium','BMI','Weight','Height'
-];
-const priorityRank = Object.fromEntries(displayPriority.map((a,i)=>[a,i]));
-const trendDirection = {
-  'LDL':'lowerBetter', 'Non-HDL':'lowerBetter', 'Total cholesterol':'lowerBetter', 'Triglycerides':'lowerBetter',
-  'ALT':'lowerBetter', 'AST':'lowerBetter', 'Gamma-GT':'lowerBetter', 'Creatine kinase (CK)':'lowerBetter', 'Glucose':'lowerBetter', 'Uric acid':'lowerBetter',
-  'eGFR':'higherBetter', 'HDL':'higherUsuallyBetter',
-  'TSH':'range', 'Creatinine':'range', 'Hemoglobin':'range', 'White blood cells (WBC)':'range', 'Platelets':'range'
-};
-const helpText = {
-  'LDL': 'LDL cholesterol is a key marker used to estimate and lower cardiovascular risk.',
-  'Non-HDL': 'Non-HDL cholesterol includes LDL and other cholesterol particles linked with cardiovascular risk.',
-  'HDL': 'HDL cholesterol is one part of the cholesterol profile and is interpreted with LDL, non-HDL, and triglycerides.',
-  'Total cholesterol': 'Total cholesterol is a broad screening number; LDL and non-HDL usually guide risk decisions more directly.',
-  'Triglycerides': 'Triglycerides are blood fats that can vary with meals, alcohol, weight changes, and recent activity.',
-  'ALT': 'ALT is a liver enzyme. Mild changes are common and are interpreted with other liver tests and context.',
-  'AST': 'AST is an enzyme found in liver and muscle. Recent exercise can affect it.',
-  'Gamma-GT': 'Gamma-GT is a liver and bile-duct enzyme, often interpreted with ALT, AST, medications, and alcohol intake.',
-  'Creatinine': 'Creatinine is used to estimate kidney filtration and can vary with muscle mass and hydration.',
-  'eGFR': 'eGFR estimates kidney filtration from creatinine and is best interpreted as a trend.',
-  'Creatine kinase (CK)': 'Creatine kinase is a muscle enzyme that can rise temporarily after exercise or muscle strain.',
-  'Glucose': 'Glucose is blood sugar. Meaning depends on whether the sample was fasting and on the test method.',
-  'Uric acid': 'Uric acid is relevant to gout and kidney stone risk, especially when symptoms or history fit.',
-  'Ferritin': 'Ferritin reflects iron stores and can also change with inflammation or liver stress.',
-  'TSH': 'TSH is a thyroid screening test; follow-up often depends on free T4/T3 and symptoms.',
-  'BMI': 'BMI is a weight-to-height measure and does not separate muscle from body fat.',
-  'Sodium': 'Sodium is an electrolyte important for fluid balance and nerve/muscle function.',
-  'Potassium': 'Potassium is an electrolyte important for heart, nerve, and muscle function.',
-  'White blood cells (WBC)': 'White blood cells are part of the immune system and can vary with infections, inflammation, and stress.',
-  'Red blood cells (RBC)': 'Red blood cells carry oxygen through the body.',
-  'Hemoglobin': 'Hemoglobin is the oxygen-carrying protein in red blood cells.',
-  'Hematocrit': 'Hematocrit shows the proportion of blood made up by red blood cells.',
-  'Platelets': 'Platelets help blood clot.',
-  'MCV': 'MCV describes the average size of red blood cells.',
-  'MCH': 'MCH describes the average amount of hemoglobin in each red blood cell.',
-  'MCHC': 'MCHC describes the hemoglobin concentration inside red blood cells.',
-  'RDW': 'RDW shows how much red blood cell size varies.',
-  'Urea': 'Urea reflects protein metabolism and kidney handling; hydration can affect it.',
-  'LDH': 'LDH is an enzyme found in many tissues and is interpreted with symptoms and other tests.',
-};
-
-function parseCSV(s){
-  const rows=[]; let row=[], cell='', q=false;
-  for(let i=0;i<s.length;i++){
-    const c=s[i], n=s[i+1];
-    if(q){ if(c==='"' && n==='"'){cell+='"'; i++;} else if(c==='"') q=false; else cell+=c; }
-    else { if(c==='"') q=true; else if(c===','){row.push(cell); cell='';} else if(c==='\n'){row.push(cell); rows.push(row); row=[]; cell='';} else if(c!=='\r') cell+=c; }
-  }
-  row.push(cell); rows.push(row);
-  const head=rows.shift() || [];
-  const parsed = rows.filter(r=>r.length && r.some(Boolean)).map(r=>Object.fromEntries(head.map((h,i)=>[h,r[i]??''])));
-  parsed.header = head;
-  return parsed;
-}
-const baselineData = parseCSV(document.getElementById('baselines').textContent.trim());
-const baselines = Object.fromEntries(baselineData.map(b => [b.analyte, {...b, lowNum:Number(b.low), highNum:Number(b.high)}]));
-const sel = document.getElementById('analyte');
-
-function esc(value){
-  return String(value ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
-}
-function isValidIsoDate(s){
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(s || '')) return false;
-  const d = new Date(s + 'T00:00:00Z');
-  return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === s;
-}
-function rebuildCaches(){
-  rowsByAnalyte = new Map();
-  for (const r of data) {
-    if (!rowsByAnalyte.has(r.analyte)) rowsByAnalyte.set(r.analyte, []);
-    rowsByAnalyte.get(r.analyte).push(r);
-  }
-  for (const rows of rowsByAnalyte.values()) rows.sort((a,b)=>a.t-b.t);
-  analytes = [...rowsByAnalyte.keys()].sort((a,b)=>(priorityRank[a]??999)-(priorityRank[b]??999) || a.localeCompare(b));
-  latestCache = analytes.map(a => {
-    const rows = rowsByAnalyte.get(a) || [];
-    return { analyte:a, rows, latest:rows.at(-1), prev:rows.at(-2) };
-  }).filter(x => x.latest);
-  latestDate = data.length ? [...new Set(data.map(r=>r.date))].sort().at(-1) : '';
-}
-function validateRows(rows){
-  const errors = [];
-  const header = rows.header || [];
-  for (const col of requiredColumns) if (!header.includes(col)) errors.push(`Missing required column: ${col}`);
-  rows.forEach((r, i) => {
-    const line = i + 2;
-    if (!isValidIsoDate(r.date)) errors.push(`Line ${line}: invalid date`);
-    if (!r.analyte) errors.push(`Line ${line}: missing analyte`);
-    if (!r.value || !Number.isFinite(Number(r.value))) errors.push(`Line ${line}: value must be numeric`);
-  });
-  return errors;
-}
-
-function prepareData(csvText){
-  const rows = parseCSV(csvText);
-  const errors = validateRows(rows);
-  if (errors.length) throw new Error(errors.slice(0, 8).join('\n') + (errors.length > 8 ? `\n…${errors.length - 8} more` : ''));
-  return rows.map(r => ({...r, valueNum: Number(r.value), t: new Date(r.date+'T00:00:00')}));
-}
-
-function rebuildNavigation(){
-  sel.innerHTML = '';
-  chips.innerHTML = '';
-  for (const [group, names] of Object.entries(groups)) {
-    const present = names.filter(a => analytes.includes(a));
-    if (!present.length) continue;
-    const og = document.createElement('optgroup'); og.label = group;
-    for (const a of present) og.appendChild(new Option(`${a} (${rowsFor(a).length})`, a));
-    sel.appendChild(og);
-  }
-  const grouped = new Set(Object.values(groups).flat());
-  const other = analytes.filter(a => !grouped.has(a));
-  if (other.length) {
-    const og = document.createElement('optgroup'); og.label = 'Other';
-    for (const a of other) og.appendChild(new Option(`${a} (${rowsFor(a).length})`, a));
-    sel.appendChild(og);
-  }
-  sel.value = analytes.includes('LDL') ? 'LDL' : (analytes[0] || '');
-
-  for (const [group, names] of Object.entries(quickGroups)) {
-    const present = names.filter(a => analytes.includes(a));
-    if (!present.length) continue;
-    const wrap = document.createElement('div'); wrap.className='chipGroup';
-    const title = document.createElement('div'); title.className='chipGroupTitle'; title.textContent=group;
-    wrap.appendChild(title);
-    for (const a of present) {
-      const b = document.createElement('button'); b.className='chip'; b.type='button'; b.textContent=a;
-      b.onclick = () => { sel.value=a; render(); document.querySelector('.hero')?.scrollIntoView({behavior:'smooth', block:'start'}); };
-      wrap.appendChild(b);
-    }
-    chips.appendChild(wrap);
-  }
-}
-
-function loadCsv(csvText, label='CSV'){
-  data = prepareData(csvText);
-  rebuildCaches();
-  rebuildNavigation();
-  renderTable();
-  importStatus.className = 'importStatus';
-  importStatus.textContent = `${label}: loaded ${data.length} measurements across ${analytes.length} analytes. Not stored.`;
-  render();
-}
-
-csvFile.onchange = async () => {
-  const file = csvFile.files?.[0];
-  if (!file) return;
-  try { loadCsv(await file.text(), file.name); }
-  catch (err) {
-    data = [];
-    rebuildCaches();
-    rebuildNavigation();
-    render();
-    importStatus.className = 'importStatus error';
-    importStatus.textContent = String(err.message || err);
-  }
-};
-demoButton.onclick = () => {
-  loadCsv(document.getElementById('demo-csv').textContent.trim(), 'Demo data');
-};
-useDefaults.onchange = render;
-sel.onchange = () => { render(); document.querySelector('.hero')?.scrollIntoView({behavior:'smooth', block:'start'}); };
-
-function rowsFor(analyte){
-  return rowsByAnalyte.get(analyte) || [];
-}
-function fmt(r){ return `${r.value}${r.unit ? ' '+r.unit : ''}`; }
-function dateShort(s){ return s.slice(2); }
-function latestWithPrevious(){
-  return latestCache;
-}
-function deltaText(latest, prev){
-  if(!prev) return `new · ${latest.date}`;
-  const d = latest.valueNum - prev.valueNum;
-  if(!Number.isFinite(d) || d === 0) return `no change · ${latest.date}`;
-  const sign = d > 0 ? '+' : '−';
-  return `${sign}${Math.abs(d).toLocaleString(undefined,{maximumFractionDigits:2})} since ${prev.date} · ${latest.date}`;
-}
-function trendWorsened(analyte, delta){
-  const dir = trendDirection[analyte];
-  if (!Number.isFinite(delta) || delta === 0) return false;
-  if (dir === 'lowerBetter') return delta > 0;
-  if (dir === 'higherBetter' || dir === 'higherUsuallyBetter') return delta < 0;
-  return false;
-}
-function statusText(r){
-  if (!r) return '—';
-  if (!r.flag) return 'Not flagged';
-  const ref = r.ref_text ? ` vs ${r.ref_text}` : '';
-  return `${r.flag}${ref}`;
-}
-function shortStatus(r){
-  if (!r?.flag) return 'Not flagged';
-  return [r.flag, r.ref_text].filter(Boolean).join(' · ');
-}
-function isAttention(x){ return !!x.latest.flag; }
-function byPriority(a,b){ return (priorityRank[a.analyte]??999)-(priorityRank[b.analyte]??999) || a.analyte.localeCompare(b.analyte); }
-function mkSvg(parent, viewBox='0 0 900 250'){
-  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); svg.setAttribute('viewBox', viewBox); parent.appendChild(svg); return svg;
-}
-function drawChart(svg, rows, opts={}){
-  svg.innerHTML='';
-  const W=900,H=opts.hero?340:250,L=58,R=58,T=24,B=42;
-  const mk=(name,attrs)=>{ const e=document.createElementNS('http://www.w3.org/2000/svg', name); for(const [k,v] of Object.entries(attrs)) e.setAttribute(k,v); svg.appendChild(e); return e; };
-  if(!rows.length){ svg.setAttribute('aria-label', 'No chart data loaded'); mk('text',{x:20,y:40,fill:'currentColor'}).textContent='No data'; return; }
-  const first = rows[0], latestForLabel = rows.at(-1);
-  svg.setAttribute('aria-label', `${first.analyte} trend chart: ${rows.length} result(s), latest ${fmt(latestForLabel)} on ${latestForLabel.date}${latestForLabel.flag ? ', flagged '+latestForLabel.flag : ''}`);
-  const baseline = useDefaults.checked ? baselines[rows[0].analyte] : null;
-  let minX=Infinity, maxX=-Infinity, minY=Infinity, maxY=-Infinity;
-  for (const r of rows) {
-    const tx = r.t.getTime();
-    minX = Math.min(minX, tx); maxX = Math.max(maxX, tx);
-    minY = Math.min(minY, r.valueNum); maxY = Math.max(maxY, r.valueNum);
-  }
-  if (minX === maxX) { minX -= 86400000; maxX += 86400000; }
-  const defaultHigh = baseline && Number.isFinite(baseline.highNum) ? baseline.highNum : undefined;
-  const defaultLow = baseline && Number.isFinite(baseline.lowNum) ? baseline.lowNum : undefined;
-  for (const v of [defaultHigh, defaultLow].filter(Number.isFinite)) { minY=Math.min(minY, v); maxY=Math.max(maxY, v); }
-  const padY=(maxY-minY||1)*0.18;
-  const x=v=>L+(v-minX)/(maxX-minX||1)*(W-L-R);
-  const y=v=>H-B-(v-(minY-padY))/((maxY+padY)-(minY-padY)||1)*(H-T-B);
-  for(let i=0;i<4;i++){ const yy=T+i*(H-T-B)/3; mk('line',{x1:L,y1:yy,x2:W-R,y2:yy,stroke:'currentColor','stroke-opacity':.10}); }
-  mk('line',{x1:L,y1:H-B,x2:W-R,y2:H-B,stroke:'currentColor','stroke-opacity':.32});
-  mk('line',{x1:L,y1:T,x2:L,y2:H-B,stroke:'currentColor','stroke-opacity':.32});
-  if(baseline && (Number.isFinite(defaultHigh) || Number.isFinite(defaultLow))){
-    if(Number.isFinite(defaultHigh) && Number.isFinite(defaultLow)) mk('rect',{x:L,y:y(defaultHigh),width:W-L-R,height:Math.max(1,y(defaultLow)-y(defaultHigh)),fill:'var(--ok)','fill-opacity':.08});
-    if(Number.isFinite(defaultHigh)){ const yy=y(defaultHigh); mk('line',{x1:L,y1:yy,x2:W-R,y2:yy,stroke:'var(--ok)','stroke-dasharray':'3 5','stroke-opacity':.7}); mk('text',{x:W-R-4,y:yy-6,'text-anchor':'end',fill:'var(--ok)','font-size':12}).textContent=baseline.target || ('general high '+defaultHigh); }
-    if(Number.isFinite(defaultLow)){ const yy=y(defaultLow); mk('line',{x1:L,y1:yy,x2:W-R,y2:yy,stroke:'var(--ok)','stroke-dasharray':'3 5','stroke-opacity':.55}); }
-  }
-  const path = rows.map((r,i)=>(i?'L':'M')+x(r.t.getTime()).toFixed(1)+' '+y(r.valueNum).toFixed(1)).join(' ');
-  mk('path',{d:path,fill:'none',stroke:'var(--accent)','stroke-width':opts.hero?3.5:3,'stroke-linecap':'round','stroke-linejoin':'round'});
-  const hoverLine = mk('line',{x1:0,y1:T,x2:0,y2:H-B,stroke:'var(--accent)','stroke-width':1.5,'stroke-dasharray':'4 4','stroke-opacity':0});
-  const latestRow = rows.at(-1);
-  for(const r of rows){
-    const flagged = !!r.flag, cx=x(r.t.getTime()), cy=y(r.valueNum);
-    const c = mk('circle',{cx,cy,r:opts.hero?6:5,fill:flagged?'#b00020':'var(--accent)',stroke:'Canvas','stroke-width':2,tabindex:0,'aria-label':`${r.date}: ${fmt(r)}${r.flag ? ', '+r.flag : ''}`});
-    const title = document.createElementNS('http://www.w3.org/2000/svg', 'title'); title.textContent = `${r.date}: ${fmt(r)}${r.ref_text ? ' · ref '+r.ref_text : ''}`; c.appendChild(title);
-    const showHover = () => { hoverLine.setAttribute('x1', cx); hoverLine.setAttribute('x2', cx); hoverLine.setAttribute('stroke-opacity', .65); c.setAttribute('r', opts.hero?8:7); };
-    const hideHover = () => { hoverLine.setAttribute('stroke-opacity', 0); c.setAttribute('r', opts.hero?6:5); };
-    c.addEventListener('mouseenter', showHover); c.addEventListener('mouseleave', hideHover);
-    c.addEventListener('focus', showHover); c.addEventListener('blur', hideHover);
-    if (opts.hero || r === latestRow) mk('text',{x:cx,y:cy-11,'text-anchor':'middle','font-size':opts.hero?13:12,'font-weight':r===latestRow?700:500,'fill-opacity':r===latestRow?1:.6,fill:flagged?'#b00020':'currentColor'}).textContent=r.value;
-    if (opts.hero || r === latestRow) mk('text',{x:cx,y:H-18,'text-anchor':'middle','font-size':12,fill:'currentColor','fill-opacity':.68}).textContent=dateShort(r.date);
-  }
-  if (!opts.mini) {
-    mk('text',{x:8,y:T+4,'font-size':12,fill:'currentColor','fill-opacity':.68}).textContent=(maxY+padY).toFixed(1);
-    mk('text',{x:8,y:H-B,'font-size':12,fill:'currentColor','fill-opacity':.68}).textContent=(minY-padY).toFixed(1);
-  }
-}
-function renderHero(){
-  const rows = rowsFor(sel.value);
-  const latest = rows.at(-1), prev = rows.at(-2);
-  heroTitle.textContent = sel.value;
-  const b = rows.length ? baselines[rows[0].analyte] : null;
-  chartNote.textContent = rows.length ? `${rows.length} result(s) · ${rows[0].unit || 'no unit'}${useDefaults.checked && b ? ' · general target '+b.target : ''}` : 'No data';
-  selectedStats.innerHTML = latest ? `
-    <strong class="${latest.flag?'high':''}">${esc(fmt(latest))}</strong>
-    <span>${esc(deltaText(latest, prev))}</span>
-    <span class="${latest.flag?'high':''}">${esc(latest.flag || 'Not flagged')}</span>
-    <span>${esc(latest.ref_text || (b?.target ? 'target '+b.target : ''))}</span>
-  ` : '';
-  chartSummary.textContent = latest ? `${sel.value}: latest ${fmt(latest)} on ${latest.date}. ${deltaText(latest, prev)}. Status: ${shortStatus(latest)}.` : '';
-  analyteHelp.innerHTML = `<summary>What this means</summary><div style="margin-top:6px">${helpText[sel.value] || 'Explanation not added yet.'}</div>`;
-  drawChart(chart, rows, {hero:true});
-  document.querySelectorAll('button.chip').forEach(b => b.classList.toggle('active', b.textContent===sel.value));
-}
-function makeTrendRow(a){
-  const rows = rowsFor(a); const latest = rows.at(-1), prev = rows.at(-2);
-  const row = document.createElement('div'); row.className='trendItem'; row.tabIndex=0; row.role='button'; row.dataset.analyte=a;
-  row.title = latest ? statusText(latest) : '';
-  row.innerHTML = `<strong>${esc(a)}</strong><span class="value ${latest?.flag?'high':''}">${latest ? esc(fmt(latest)) : '—'}</span><span class="change">${latest ? esc(deltaText(latest, prev)) : ''}</span><small>${latest?.flag ? `<span class="high">${esc(shortStatus(latest))}</span>` : 'Not flagged'}</small>`;
-  const activate = () => { sel.value=a; renderHero(); document.querySelector('.hero')?.scrollIntoView({behavior:'smooth', block:'start'}); };
-  row.onclick = activate;
-  row.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activate(); } };
-  return row;
-}
-function shouldShowPanel(a, group){
-  const rows = rowsFor(a); const latest = rows.at(-1);
-  const priority = ['Lipids / cardiovascular', 'Liver', 'Kidney / metabolism'];
-  return rows.length >= 3 || latest?.flag || (priority.includes(group) && rows.length > 1);
-}
-function renderDashboard(){
-  dashboard.innerHTML='';
-  for(const group of dashboardGroups){
-    const present = (groups[group] || []).filter(a => analytes.includes(a) && shouldShowPanel(a, group));
-    if (!present.length) continue;
-    const section = document.createElement('details'); section.className='groupSection'; section.dataset.group = group;
-    if (group !== 'Blood count') section.open = true;
-    section.innerHTML = `<summary><h3 style="display:inline">${group}</h3></summary><div class="trendList"></div>`;
-    const list = section.querySelector('.trendList');
-    for(const a of present) list.appendChild(makeTrendRow(a));
-    dashboard.appendChild(section);
-  }
-}
-function renderSummary(){
-  const latest = latestWithPrevious();
-  const latestCount = data.filter(r=>r.date===latestDate).length;
-  const attention = latest.filter(isAttention);
-  const changes = latest.filter(x => x.prev).map(x => ({...x, delta:x.latest.valueNum-x.prev.valueNum})).filter(x => Number.isFinite(x.delta));
-  const improved = changes.filter(x => x.prev.flag && !x.latest.flag).sort((a,b)=>Math.abs(b.delta)-Math.abs(a.delta))[0];
-  const worsened = changes
-    .filter(x => !(x.prev.flag && !x.latest.flag))
-    .filter(x => x.latest.flag || trendWorsened(x.analyte, x.delta))
-    .sort((a,b)=>(priorityRank[a.analyte]??999)-(priorityRank[b.analyte]??999) || Math.abs(b.delta)-Math.abs(a.delta))[0];
-  globalHighlights.innerHTML = `<div class="summaryLine"><strong>Latest:</strong> ${esc(latestDate || '—')}${latestDate ? ` · ${latestCount} markers` : ''} · <strong class="${attention.length?'high':''}">${attention.length || 'no'} flagged</strong>${worsened ? ` · <strong>Worsened:</strong> ${esc(worsened.analyte)} ${esc(fmt(worsened.prev))} → ${esc(fmt(worsened.latest))}` : ''}${improved ? ` · <strong>Improved:</strong> ${esc(improved.analyte)} ${esc(fmt(improved.prev))} → ${esc(fmt(improved.latest))}` : ''}</div>`;
-}
-function renderCards(){
-  const latest = latestWithPrevious();
-  const attention = latest.filter(isAttention).sort(byPriority);
-  attentionCards.innerHTML = attention.length
-    ? attention.map(x => `<div class="attentionItem" tabindex="0" role="button" data-analyte="${esc(x.analyte)}" title="${esc(statusText(x.latest))}"><strong>${esc(x.analyte)}</strong><span class="value">${esc(fmt(x.latest))}</span><small>${esc(deltaText(x.latest, x.prev))} · <span class="badge high">${esc(shortStatus(x.latest))}</span></small></div>`).join('')
-    : '<div class="attentionItem"><strong>No flagged latest values</strong><span>—</span><small>based on parsed ranges</small></div>';
-  attentionCards.querySelectorAll('[data-analyte]').forEach(el => {
-    const activate = () => { sel.value = el.dataset.analyte; render(); document.querySelector('.hero')?.scrollIntoView({behavior:'smooth', block:'start'}); };
-    el.onclick = activate;
-    el.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activate(); } };
-  });
-}
-function renderTable(){
-  const rows=data.slice().sort((a,b)=>b.t-a.t || a.analyte.localeCompare(b.analyte));
-
-  const groups = new Map();
-  for (const r of rows) {
-    const key = `${r.date}|${r.source_file}`;
-    if (!groups.has(key)) groups.set(key, {date:r.date, source_file:r.source_file, lab:r.lab, analytes:[], flagged:[]});
-    const g = groups.get(key);
-    g.analytes.push(r.analyte);
-    if (r.flag) g.flagged.push(`${r.analyte} ${r.value}${r.unit ? ' '+r.unit : ''}`);
-  }
-  const reportRows = [...groups.values()].sort((a,b)=>b.date.localeCompare(a.date));
-  reportsTable.innerHTML = `<thead><tr><th>Date</th><th>Lab</th><th>Checked</th><th>Flagged</th><th>Source</th></tr></thead><tbody>` +
-    reportRows.map(g => `<tr><td>${esc(g.date)}</td><td>${esc(g.lab)}</td><td>${esc([...new Set(g.analytes)].sort().join(', '))}</td><td class="${g.flagged.length?'high':''}">${esc(g.flagged.join(', ') || '')}</td><td>${esc(g.source_file || 'PDF')}</td></tr>`).join('') +
-    '</tbody>';
-
-  const cols=['date','analyte','value','unit','ref_text','flag','lab','source_file','notes'];
-  table.innerHTML = `<thead><tr>${cols.map(c=>`<th>${esc(c)}</th>`).join('')}</tr></thead><tbody>` + rows.map(r=>`<tr>${cols.map(c=>`<td class="${c==='flag'&&r[c]?'high':''}">${esc(r[c]||'')}</td>`).join('')}</tr>`).join('') + '</tbody>';
-}
-function render(){
-  document.body.classList.toggle('is-empty', data.length === 0);
-  if (!data.length) {
-    sel.disabled = true;
-    chartSummary.textContent = '';
-    globalHighlights.innerHTML = '';
-    attentionCards.innerHTML = '';
-    dashboard.innerHTML = '';
-    reportsTable.innerHTML = '';
-    table.innerHTML = '';
-    return;
-  }
-  sel.disabled = false;
-  renderSummary(); renderHero(); renderDashboard(); renderCards();
-}
-if (parseCSV(embeddedCsvText).length) loadCsv(embeddedCsvText, 'Embedded data');
-else { rebuildNavigation(); render(); }
-
-</script>
-<footer class="pageFooter">
-  <div class="footer">
-    <p>Privacy: CSV files are parsed locally in your browser session. They are not uploaded and not saved to localStorage or IndexedDB. Refreshing or closing the tab clears imported data from the page.</p>
-    <p>© 2026 Made by <a href="https://amureki.me" rel="me">amureki</a>.</p>
-  </div>
-</footer>
 </body>
 </html>

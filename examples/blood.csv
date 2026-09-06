@@ -1,91 +1,91 @@
-date,lab,analyte,value,unit,ref_text,flag,notes
-2023-01-10,Example Clinic,ALT,24,U/l,<45,,Synthetic sample row
-2023-01-10,Example Clinic,AST,21,U/l,<35,,Synthetic sample row
-2023-01-10,Example Clinic,BMI,25.1,kg/m2,18.5-25.0,high_borderline,Synthetic sample row
-2023-01-10,Example Clinic,Creatinine,0.91,mg/dl,0.70-1.20,,Synthetic sample row
-2023-01-10,Example Clinic,Gamma-GT,19,U/l,<60,,Synthetic sample row
-2023-01-10,Example Clinic,HDL,55,mg/dl,>40,,Synthetic sample row
-2023-01-10,Example Clinic,LDL,116,mg/dl,risk-adapted,,Synthetic sample row
-2023-01-10,Example Clinic,Total cholesterol,188,mg/dl,<200,,Synthetic sample row
-2023-01-10,Example Clinic,Triglycerides,84,mg/dl,<150,,Synthetic sample row
-2023-01-10,Example Clinic,Weight,81.2,kg,,,Synthetic sample row
-2023-01-10,Example Clinic,eGFR,108,ml/min/1.73m2,>60,,Synthetic sample row
-2023-06-22,Example Clinic,ALT,31,U/l,<45,,Synthetic sample row
-2023-06-22,Example Clinic,Creatinine,0.98,mg/dl,0.70-1.20,,Synthetic sample row
-2023-06-22,Example Clinic,Gamma-GT,25,U/l,<60,,Synthetic sample row
-2023-06-22,Example Clinic,Glucose,88,mg/dl,60-110,,Synthetic sample row
-2023-06-22,Example Clinic,HDL,52,mg/dl,>40,,Synthetic sample row
-2023-06-22,Example Clinic,LDL,129,mg/dl,risk-adapted,high_borderline,Synthetic sample row
-2023-06-22,Example Clinic,Non-HDL,151,mg/dl,risk-adapted,high,Synthetic sample row
-2023-06-22,Example Clinic,Total cholesterol,203,mg/dl,<200,high_borderline,Synthetic sample row
-2023-06-22,Example Clinic,Triglycerides,111,mg/dl,<150,,Synthetic sample row
-2023-12-05,Example Clinic,ALT,48,U/l,<45,high,Synthetic sample row
-2023-12-05,Example Clinic,AST,34,U/l,<35,,Synthetic sample row
-2023-12-05,Example Clinic,Creatinine,1.05,mg/dl,0.70-1.20,,Synthetic sample row
-2023-12-05,Example Clinic,Gamma-GT,38,U/l,<60,,Synthetic sample row
-2023-12-05,Example Clinic,HDL,50,mg/dl,>40,,Synthetic sample row
-2023-12-05,Example Clinic,LDL,141,mg/dl,risk-adapted,high,Synthetic sample row
-2023-12-05,Example Clinic,Non-HDL,167,mg/dl,risk-adapted,high,Synthetic sample row
-2023-12-05,Example Clinic,Total cholesterol,217,mg/dl,<200,high,Synthetic sample row
-2023-12-05,Example Clinic,Triglycerides,176,mg/dl,<150,high,Synthetic sample row
-2023-12-05,Example Clinic,Uric acid,5.1,mg/dl,3.4-7.0,,Synthetic sample row
-2023-12-05,Example Clinic,eGFR,96,ml/min/1.73m2,>60,,Synthetic sample row
-2024-05-18,Example Clinic,ALT,36,U/l,<45,,Synthetic sample row
-2024-05-18,Example Clinic,AST,26,U/l,<35,,Synthetic sample row
-2024-05-18,Example Clinic,BMI,24.6,kg/m2,18.5-25.0,,Synthetic sample row
-2024-05-18,Example Clinic,Creatinine,0.96,mg/dl,0.70-1.20,,Synthetic sample row
-2024-05-18,Example Clinic,Ferritin,64,ng/ml,30-400,,Synthetic sample row
-2024-05-18,Example Clinic,Gamma-GT,30,U/l,<60,,Synthetic sample row
-2024-05-18,Example Clinic,Glucose,101,mg/dl,60-110,,Synthetic sample row
-2024-05-18,Example Clinic,HDL,57,mg/dl,>40,,Synthetic sample row
-2024-05-18,Example Clinic,Hematocrit,43.9,%,40-52,,Synthetic sample row
-2024-05-18,Example Clinic,Hemoglobin,14.8,g/dl,13.5-17.5,,Synthetic sample row
-2024-05-18,Example Clinic,LDL,135,mg/dl,risk-adapted,high,Synthetic sample row
-2024-05-18,Example Clinic,Non-HDL,152,mg/dl,risk-adapted,high,Synthetic sample row
-2024-05-18,Example Clinic,Platelets,238,Gpt/l,150-400,,Synthetic sample row
-2024-05-18,Example Clinic,Potassium,4.4,mmol/l,3.5-5.1,,Synthetic sample row
-2024-05-18,Example Clinic,Red blood cells (RBC),4.88,Tpt/l,4.40-5.80,,Synthetic sample row
-2024-05-18,Example Clinic,Sodium,140,mmol/l,136-145,,Synthetic sample row
-2024-05-18,Example Clinic,Total cholesterol,209,mg/dl,<200,high,Synthetic sample row
-2024-05-18,Example Clinic,Triglycerides,95,mg/dl,<150,,Synthetic sample row
-2024-05-18,Example Clinic,Weight,79.6,kg,,,Synthetic sample row
-2024-05-18,Example Clinic,White blood cells (WBC),6850,/µl,4000-11000,,Synthetic sample row
-2024-05-18,Example Clinic,eGFR,103,ml/min/1.73m2,>60,,Synthetic sample row
-2024-10-30,Example Clinic,ALT,41,U/l,<45,,Synthetic sample row
-2024-10-30,Example Clinic,Creatinine,0.94,mg/dl,0.70-1.20,,Synthetic sample row
-2024-10-30,Example Clinic,Gamma-GT,27,U/l,<60,,Synthetic sample row
-2024-10-30,Example Clinic,HDL,60,mg/dl,>40,,Synthetic sample row
-2024-10-30,Example Clinic,LDL,122,mg/dl,risk-adapted,high_borderline,Synthetic sample row
-2024-10-30,Example Clinic,Non-HDL,138,mg/dl,risk-adapted,,Synthetic sample row
-2024-10-30,Example Clinic,TSH,1.3,µU/ml,0.40-4.00,,Synthetic sample row
-2024-10-30,Example Clinic,Total cholesterol,198,mg/dl,<200,,Synthetic sample row
-2024-10-30,Example Clinic,Triglycerides,82,mg/dl,<150,,Synthetic sample row
-2024-10-30,Example Clinic,Uric acid,5.7,mg/dl,3.4-7.0,,Synthetic sample row
-2024-10-30,Example Clinic,eGFR,106,ml/min/1.73m2,>60,,Synthetic sample row
-2025-04-14,Example Clinic,ALT,29,U/l,<45,,Synthetic sample row
-2025-04-14,Example Clinic,AST,23,U/l,<35,,Synthetic sample row
-2025-04-14,Example Clinic,Glucose,94,mg/dl,60-110,,Synthetic sample row
-2025-04-14,Example Clinic,Triglycerides,143,mg/dl,<150,,Synthetic sample row
-2025-11-03,Example Clinic,ALT,27,U/l,<45,,Synthetic sample row
-2025-11-03,Example Clinic,AST,22,U/l,<35,,Synthetic sample row
-2025-11-03,Example Clinic,BMI,24.1,kg/m2,18.5-25.0,,Synthetic sample row
-2025-11-03,Example Clinic,Creatinine,0.9,mg/dl,0.70-1.20,,Synthetic sample row
-2025-11-03,Example Clinic,Ferritin,78,ng/ml,30-400,,Synthetic sample row
-2025-11-03,Example Clinic,Gamma-GT,24,U/l,<60,,Synthetic sample row
-2025-11-03,Example Clinic,Glucose,90,mg/dl,60-110,,Synthetic sample row
-2025-11-03,Example Clinic,HDL,62,mg/dl,>40,,Synthetic sample row
-2025-11-03,Example Clinic,Hematocrit,44.7,%,40-52,,Synthetic sample row
-2025-11-03,Example Clinic,Hemoglobin,15.1,g/dl,13.5-17.5,,Synthetic sample row
-2025-11-03,Example Clinic,LDL,113,mg/dl,risk-adapted,,Synthetic sample row
-2025-11-03,Example Clinic,Non-HDL,129,mg/dl,risk-adapted,,Synthetic sample row
-2025-11-03,Example Clinic,Platelets,251,Gpt/l,150-400,,Synthetic sample row
-2025-11-03,Example Clinic,Potassium,4.2,mmol/l,3.5-5.1,,Synthetic sample row
-2025-11-03,Example Clinic,Red blood cells (RBC),4.95,Tpt/l,4.40-5.80,,Synthetic sample row
-2025-11-03,Example Clinic,Sodium,141,mmol/l,136-145,,Synthetic sample row
-2025-11-03,Example Clinic,TSH,1.6,µU/ml,0.40-4.00,,Synthetic sample row
-2025-11-03,Example Clinic,Total cholesterol,191,mg/dl,<200,,Synthetic sample row
-2025-11-03,Example Clinic,Triglycerides,74,mg/dl,<150,,Synthetic sample row
-2025-11-03,Example Clinic,Uric acid,5.3,mg/dl,3.4-7.0,,Synthetic sample row
-2025-11-03,Example Clinic,Weight,77.8,kg,,,Synthetic sample row
-2025-11-03,Example Clinic,White blood cells (WBC),6120,/µl,4000-11000,,Synthetic sample row
-2025-11-03,Example Clinic,eGFR,111,ml/min/1.73m2,>60,,Synthetic sample row
+date,source_date,source_file,lab,analyte,original_name,value,unit
+2023-01-10,2023-01-10,example-report-2023-01-10.pdf,Example Clinic,ALT,ALT,24,U/l
+2023-01-10,2023-01-10,example-report-2023-01-10.pdf,Example Clinic,AST,AST,21,U/l
+2023-01-10,2023-01-10,example-report-2023-01-10.pdf,Example Clinic,BMI,BMI,25.1,kg/m2
+2023-01-10,2023-01-10,example-report-2023-01-10.pdf,Example Clinic,Creatinine,Creatinine,0.91,mg/dl
+2023-01-10,2023-01-10,example-report-2023-01-10.pdf,Example Clinic,Gamma-GT,Gamma-GT,19,U/l
+2023-01-10,2023-01-10,example-report-2023-01-10.pdf,Example Clinic,HDL,HDL,55,mg/dl
+2023-01-10,2023-01-10,example-report-2023-01-10.pdf,Example Clinic,LDL,LDL,116,mg/dl
+2023-01-10,2023-01-10,example-report-2023-01-10.pdf,Example Clinic,Total cholesterol,Total cholesterol,188,mg/dl
+2023-01-10,2023-01-10,example-report-2023-01-10.pdf,Example Clinic,Triglycerides,Triglycerides,84,mg/dl
+2023-01-10,2023-01-10,example-report-2023-01-10.pdf,Example Clinic,Weight,Weight,81.2,kg
+2023-01-10,2023-01-10,example-report-2023-01-10.pdf,Example Clinic,eGFR,eGFR,108,ml/min/1.73m2
+2023-06-22,2023-06-22,example-report-2023-06-22.pdf,Example Clinic,ALT,ALT,31,U/l
+2023-06-22,2023-06-22,example-report-2023-06-22.pdf,Example Clinic,Creatinine,Creatinine,0.98,mg/dl
+2023-06-22,2023-06-22,example-report-2023-06-22.pdf,Example Clinic,Gamma-GT,Gamma-GT,25,U/l
+2023-06-22,2023-06-22,example-report-2023-06-22.pdf,Example Clinic,Glucose,Glucose,88,mg/dl
+2023-06-22,2023-06-22,example-report-2023-06-22.pdf,Example Clinic,HDL,HDL,52,mg/dl
+2023-06-22,2023-06-22,example-report-2023-06-22.pdf,Example Clinic,LDL,LDL,129,mg/dl
+2023-06-22,2023-06-22,example-report-2023-06-22.pdf,Example Clinic,Non-HDL,Non-HDL,151,mg/dl
+2023-06-22,2023-06-22,example-report-2023-06-22.pdf,Example Clinic,Total cholesterol,Total cholesterol,203,mg/dl
+2023-06-22,2023-06-22,example-report-2023-06-22.pdf,Example Clinic,Triglycerides,Triglycerides,111,mg/dl
+2023-12-05,2023-12-05,example-report-2023-12-05.pdf,Example Clinic,ALT,ALT,48,U/l
+2023-12-05,2023-12-05,example-report-2023-12-05.pdf,Example Clinic,AST,AST,34,U/l
+2023-12-05,2023-12-05,example-report-2023-12-05.pdf,Example Clinic,Creatinine,Creatinine,1.05,mg/dl
+2023-12-05,2023-12-05,example-report-2023-12-05.pdf,Example Clinic,Gamma-GT,Gamma-GT,38,U/l
+2023-12-05,2023-12-05,example-report-2023-12-05.pdf,Example Clinic,HDL,HDL,50,mg/dl
+2023-12-05,2023-12-05,example-report-2023-12-05.pdf,Example Clinic,LDL,LDL,141,mg/dl
+2023-12-05,2023-12-05,example-report-2023-12-05.pdf,Example Clinic,Non-HDL,Non-HDL,167,mg/dl
+2023-12-05,2023-12-05,example-report-2023-12-05.pdf,Example Clinic,Total cholesterol,Total cholesterol,217,mg/dl
+2023-12-05,2023-12-05,example-report-2023-12-05.pdf,Example Clinic,Triglycerides,Triglycerides,176,mg/dl
+2023-12-05,2023-12-05,example-report-2023-12-05.pdf,Example Clinic,Uric acid,Uric acid,5.1,mg/dl
+2023-12-05,2023-12-05,example-report-2023-12-05.pdf,Example Clinic,eGFR,eGFR,96,ml/min/1.73m2
+2024-05-18,2024-05-18,example-report-2024-05-18.pdf,Example Clinic,ALT,ALT,36,U/l
+2024-05-18,2024-05-18,example-report-2024-05-18.pdf,Example Clinic,AST,AST,26,U/l
+2024-05-18,2024-05-18,example-report-2024-05-18.pdf,Example Clinic,BMI,BMI,24.6,kg/m2
+2024-05-18,2024-05-18,example-report-2024-05-18.pdf,Example Clinic,Creatinine,Creatinine,0.96,mg/dl
+2024-05-18,2024-05-18,example-report-2024-05-18.pdf,Example Clinic,Ferritin,Ferritin,64,ng/ml
+2024-05-18,2024-05-18,example-report-2024-05-18.pdf,Example Clinic,Gamma-GT,Gamma-GT,30,U/l
+2024-05-18,2024-05-18,example-report-2024-05-18.pdf,Example Clinic,Glucose,Glucose,101,mg/dl
+2024-05-18,2024-05-18,example-report-2024-05-18.pdf,Example Clinic,HDL,HDL,57,mg/dl
+2024-05-18,2024-05-18,example-report-2024-05-18.pdf,Example Clinic,Hematocrit,Hematocrit,43.9,%
+2024-05-18,2024-05-18,example-report-2024-05-18.pdf,Example Clinic,Hemoglobin,Hemoglobin,14.8,g/dl
+2024-05-18,2024-05-18,example-report-2024-05-18.pdf,Example Clinic,LDL,LDL,135,mg/dl
+2024-05-18,2024-05-18,example-report-2024-05-18.pdf,Example Clinic,Non-HDL,Non-HDL,152,mg/dl
+2024-05-18,2024-05-18,example-report-2024-05-18.pdf,Example Clinic,Platelets,Platelets,238,Gpt/l
+2024-05-18,2024-05-18,example-report-2024-05-18.pdf,Example Clinic,Potassium,Potassium,4.4,mmol/l
+2024-05-18,2024-05-18,example-report-2024-05-18.pdf,Example Clinic,Red blood cells (RBC),Red blood cells (RBC),4.88,Tpt/l
+2024-05-18,2024-05-18,example-report-2024-05-18.pdf,Example Clinic,Sodium,Sodium,140,mmol/l
+2024-05-18,2024-05-18,example-report-2024-05-18.pdf,Example Clinic,Total cholesterol,Total cholesterol,209,mg/dl
+2024-05-18,2024-05-18,example-report-2024-05-18.pdf,Example Clinic,Triglycerides,Triglycerides,95,mg/dl
+2024-05-18,2024-05-18,example-report-2024-05-18.pdf,Example Clinic,Weight,Weight,79.6,kg
+2024-05-18,2024-05-18,example-report-2024-05-18.pdf,Example Clinic,White blood cells (WBC),White blood cells (WBC),6850,/µl
+2024-05-18,2024-05-18,example-report-2024-05-18.pdf,Example Clinic,eGFR,eGFR,103,ml/min/1.73m2
+2024-10-30,2024-10-30,example-report-2024-10-30.pdf,Example Clinic,ALT,ALT,41,U/l
+2024-10-30,2024-10-30,example-report-2024-10-30.pdf,Example Clinic,Creatinine,Creatinine,0.94,mg/dl
+2024-10-30,2024-10-30,example-report-2024-10-30.pdf,Example Clinic,Gamma-GT,Gamma-GT,27,U/l
+2024-10-30,2024-10-30,example-report-2024-10-30.pdf,Example Clinic,HDL,HDL,60,mg/dl
+2024-10-30,2024-10-30,example-report-2024-10-30.pdf,Example Clinic,LDL,LDL,122,mg/dl
+2024-10-30,2024-10-30,example-report-2024-10-30.pdf,Example Clinic,Non-HDL,Non-HDL,138,mg/dl
+2024-10-30,2024-10-30,example-report-2024-10-30.pdf,Example Clinic,TSH,TSH,1.3,µU/ml
+2024-10-30,2024-10-30,example-report-2024-10-30.pdf,Example Clinic,Total cholesterol,Total cholesterol,198,mg/dl
+2024-10-30,2024-10-30,example-report-2024-10-30.pdf,Example Clinic,Triglycerides,Triglycerides,82,mg/dl
+2024-10-30,2024-10-30,example-report-2024-10-30.pdf,Example Clinic,Uric acid,Uric acid,5.7,mg/dl
+2024-10-30,2024-10-30,example-report-2024-10-30.pdf,Example Clinic,eGFR,eGFR,106,ml/min/1.73m2
+2025-04-14,2025-04-14,example-report-2025-04-14.pdf,Example Clinic,ALT,ALT,29,U/l
+2025-04-14,2025-04-14,example-report-2025-04-14.pdf,Example Clinic,AST,AST,23,U/l
+2025-04-14,2025-04-14,example-report-2025-04-14.pdf,Example Clinic,Glucose,Glucose,94,mg/dl
+2025-04-14,2025-04-14,example-report-2025-04-14.pdf,Example Clinic,Triglycerides,Triglycerides,143,mg/dl
+2025-11-03,2025-11-03,example-report-2025-11-03.pdf,Example Clinic,ALT,ALT,27,U/l
+2025-11-03,2025-11-03,example-report-2025-11-03.pdf,Example Clinic,AST,AST,22,U/l
+2025-11-03,2025-11-03,example-report-2025-11-03.pdf,Example Clinic,BMI,BMI,24.1,kg/m2
+2025-11-03,2025-11-03,example-report-2025-11-03.pdf,Example Clinic,Creatinine,Creatinine,0.9,mg/dl
+2025-11-03,2025-11-03,example-report-2025-11-03.pdf,Example Clinic,Ferritin,Ferritin,78,ng/ml
+2025-11-03,2025-11-03,example-report-2025-11-03.pdf,Example Clinic,Gamma-GT,Gamma-GT,24,U/l
+2025-11-03,2025-11-03,example-report-2025-11-03.pdf,Example Clinic,Glucose,Glucose,90,mg/dl
+2025-11-03,2025-11-03,example-report-2025-11-03.pdf,Example Clinic,HDL,HDL,62,mg/dl
+2025-11-03,2025-11-03,example-report-2025-11-03.pdf,Example Clinic,Hematocrit,Hematocrit,44.7,%
+2025-11-03,2025-11-03,example-report-2025-11-03.pdf,Example Clinic,Hemoglobin,Hemoglobin,15.1,g/dl
+2025-11-03,2025-11-03,example-report-2025-11-03.pdf,Example Clinic,LDL,LDL,113,mg/dl
+2025-11-03,2025-11-03,example-report-2025-11-03.pdf,Example Clinic,Non-HDL,Non-HDL,129,mg/dl
+2025-11-03,2025-11-03,example-report-2025-11-03.pdf,Example Clinic,Platelets,Platelets,251,Gpt/l
+2025-11-03,2025-11-03,example-report-2025-11-03.pdf,Example Clinic,Potassium,Potassium,4.2,mmol/l
+2025-11-03,2025-11-03,example-report-2025-11-03.pdf,Example Clinic,Red blood cells (RBC),Red blood cells (RBC),4.95,Tpt/l
+2025-11-03,2025-11-03,example-report-2025-11-03.pdf,Example Clinic,Sodium,Sodium,141,mmol/l
+2025-11-03,2025-11-03,example-report-2025-11-03.pdf,Example Clinic,TSH,TSH,1.6,µU/ml
+2025-11-03,2025-11-03,example-report-2025-11-03.pdf,Example Clinic,Total cholesterol,Total cholesterol,191,mg/dl
+2025-11-03,2025-11-03,example-report-2025-11-03.pdf,Example Clinic,Triglycerides,Triglycerides,74,mg/dl
+2025-11-03,2025-11-03,example-report-2025-11-03.pdf,Example Clinic,Uric acid,Uric acid,5.3,mg/dl
+2025-11-03,2025-11-03,example-report-2025-11-03.pdf,Example Clinic,Weight,Weight,77.8,kg
+2025-11-03,2025-11-03,example-report-2025-11-03.pdf,Example Clinic,White blood cells (WBC),White blood cells (WBC),6120,/µl
+2025-11-03,2025-11-03,example-report-2025-11-03.pdf,Example Clinic,eGFR,eGFR,111,ml/min/1.73m2
