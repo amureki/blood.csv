@@ -74,14 +74,24 @@
     [['Height'], 'Your measured height. Together with weight, it is used to calculate body mass index (BMI).', 'https://medlineplus.gov/ency/article/007196.htm'],
     [['BMI'], 'Body mass index: weight in kilograms divided by height in metres squared. It does not distinguish muscle from body fat.', 'https://medlineplus.gov/ency/article/007196.htm']
   ].flatMap(([names, text, url]) => names.map(name => [name.toLowerCase(), { text, url }])));
+  const labReference = { label: 'Reference', profile: 'Male, 30–40', sourceName: 'Frankfurt lab ranges', note: 'Your lab’s limits may differ.' };
   const referenceSources = {
-    chemistry: 'https://www.unimedizin-ffm.de/fileadmin/redakteure/Fachkliniken/Innere-Medizin/Zentrallabor/Referenzbereiche_NEU/IB-AL2-003_V3_Referenzbereiche_Klinische_Chemie.pdf',
-    blood: 'https://www.unimedizin-ffm.de/fileadmin/redakteure/Fachkliniken/Innere-Medizin/Zentrallabor/Referenzbereiche_NEU/IB-AL-002_V3_Referenzbereiche_H%C3%A4matologie.pdf',
-    hormones: 'https://www.unimedizin-ffm.de/fileadmin/redakteure/Fachkliniken/Innere-Medizin/Zentrallabor/Referenzbereiche_NEU/IB-AL2-004_V3_Referenzbereiche_Hormone.pdf'
+    chemistry: { ...labReference, url: 'https://www.unimedizin-ffm.de/fileadmin/redakteure/Fachkliniken/Innere-Medizin/Zentrallabor/Referenzbereiche_NEU/IB-AL2-003_V3_Referenzbereiche_Klinische_Chemie.pdf' },
+    blood: { ...labReference, url: 'https://www.unimedizin-ffm.de/fileadmin/redakteure/Fachkliniken/Innere-Medizin/Zentrallabor/Referenzbereiche_NEU/IB-AL-002_V3_Referenzbereiche_H%C3%A4matologie.pdf' },
+    hormones: { ...labReference, url: 'https://www.unimedizin-ffm.de/fileadmin/redakteure/Fachkliniken/Innere-Medizin/Zentrallabor/Referenzbereiche_NEU/IB-AL2-004_V3_Referenzbereiche_Hormone.pdf' },
+    cholesterol: { label: 'Desirable', profile: 'Adults', sourceName: 'MedlinePlus', url: 'https://medlineplus.gov/cholesterollevelswhatyouneedtoknow.html' },
+    ldl: { label: 'Low-risk target', sourceName: 'Lipid-Liga', url: 'https://www.lipid-liga.de/wenig-cholesterin-im-blut-weniger-herzinfarkte-schlaganfaelle-und-durchblutungsstoerungen/' },
+    hdl: { label: 'Reference', profile: 'Men', sourceName: 'MedlinePlus', url: 'https://medlineplus.gov/cholesterollevelswhatyouneedtoknow.html' },
+    triglycerides: { ranges: [{ label: 'Fasting', lower: null, upper: 150 }, { label: 'Non-fasting', lower: null, upper: 175 }], sourceName: 'EAS / EFLM', url: 'https://esc365.escardio.org/journal/26789' }
   };
-  // Frankfurt's 2026 intervals applicable to a male aged 30–40; null means no stated bound.
+  // Lab intervals apply to a male aged 30–40; cholesterol uses an adult decision threshold.
+  // Null means no stated bound.
   // Count-density aliases are equivalent units. Only /µl needs a scaled reference interval.
   const markerReferences = new Map([
+    [['Total cholesterol', 'Cholesterol'], ['mg/dl'], null, 200, 'cholesterol'],
+    [['LDL', 'LDL cholesterol'], ['mg/dl'], null, 116, 'ldl'],
+    [['HDL', 'HDL cholesterol'], ['mg/dl'], 40, null, 'hdl'],
+    [['Triglycerides'], ['mg/dl'], null, null, 'triglycerides'],
     [['ALT'], ['u/l'], null, 50, 'chemistry', 5],
     [['AST'], ['u/l'], null, 40, 'chemistry', 5],
     [['Gamma-GT', 'GGT'], ['u/l'], null, 60, 'chemistry', 5],
@@ -112,7 +122,7 @@
     [['Iron', 'Serum iron'], ['µg/dl'], 59, 158, 'chemistry', 4],
     [['TSH'], ['miu/l', 'µiu/ml', 'µu/ml'], .27, 4.2, 'hormones', 8],
     [['Uric acid', 'Urate'], ['mg/dl'], 3.4, 7, 'chemistry', 6]
-  ].flatMap(([names, units, lower, upper, source, page]) => names.flatMap(name => units.map(unit => [JSON.stringify([name.toLowerCase(), unit]), { lower, upper, url: referenceSources[source] + '#page=' + page }]))));
+  ].flatMap(([names, units, lower, upper, source, page]) => names.flatMap(name => units.map(unit => [JSON.stringify([name.toLowerCase(), unit]), { ...referenceSources[source], ranges: referenceSources[source].ranges ?? [{ lower, upper }], url: referenceSources[source].url + (page ? '#page=' + page : '') }]))));
   const decimalPattern = /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/i;
   const dateFormat = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
   const numberFormat = new Intl.NumberFormat('en-GB', { maximumSignificantDigits: 6 });
@@ -249,7 +259,10 @@
     const canPlot = item.unit && numericRows.length > 1;
     const explanation = markerExplanations.get(item.name.toLowerCase());
     const reference = item.reference;
-    const rangeLabel = reference ? (reference.lower === null ? '< ' + numberFormat.format(reference.upper) : numberFormat.format(reference.lower) + '–' + numberFormat.format(reference.upper)) + ' ' + item.unit : '';
+    const rangeLabel = reference ? reference.ranges.map(range => {
+      const value = range.lower === null ? '< ' + numberFormat.format(range.upper) : range.upper === null ? '≥ ' + numberFormat.format(range.lower) : numberFormat.format(range.lower) + '–' + numberFormat.format(range.upper);
+      return (range.label || reference.label) + ': ' + value + ' ' + item.unit;
+    }).join(' · ') + (reference.profile ? ' · ' + reference.profile : '') : '';
     const notes = [];
     if (item.rows.length > 1) {
       if (!item.unit) notes.push('Unit not supplied; no chart or change is calculated.');
@@ -258,7 +271,7 @@
       if (item.duplicateDates) notes.push('Multiple results on a date are retained. Points are not connected.');
     }
     return historyTable(item) +
-      (canPlot ? '<div class="historyChart"><h3>Trend · ' + esc(item.unit) + '</h3>' + (reference ? '<p class="referenceLegend" id="reference-' + item.id + '">Reference: ' + esc(rangeLabel) + ' · Male, 30–40</p>' : '') + '<svg class="chart" data-chart="' + item.id + '" role="img" tabindex="0"' + (reference ? ' aria-describedby="reference-' + item.id + '"' : '') + ' aria-label="' + esc(item.name) + ' history. Tap a point or use Left and Right arrow keys for exact values. Every result is in the table above."></svg><p class="pointReadout" aria-live="polite">Tap a point for its date and value.</p>' + (reference ? '<p class="referenceSource"><a href="' + esc(reference.url) + '" target="_blank" rel="noopener noreferrer">Frankfurt lab ranges<span class="visuallyHidden"> (opens in a new tab)</span></a> · Your lab’s limits may differ.</p>' : '') + '</div>' : '') +
+      (canPlot ? '<div class="historyChart"><h3>Trend · ' + esc(item.unit) + '</h3>' + (reference ? '<p class="referenceLegend" id="reference-' + item.id + '">' + esc(rangeLabel) + '</p>' : '') + '<svg class="chart" data-chart="' + item.id + '" role="img" tabindex="0"' + (reference ? ' aria-describedby="reference-' + item.id + '"' : '') + ' aria-label="' + esc(item.name) + ' history. Tap a point or use Left and Right arrow keys for exact values. Every result is in the table above."></svg><p class="pointReadout" aria-live="polite">Tap a point for its date and value.</p>' + (reference ? '<p class="referenceSource"><a href="' + esc(reference.url) + '" target="_blank" rel="noopener noreferrer">' + esc(reference.sourceName) + '<span class="visuallyHidden"> (opens in a new tab)</span></a>' + (reference.note ? ' · ' + esc(reference.note) : '') + '</p>' : '') + '</div>' : '') +
       (notes.length ? '<p class="quiet historyNote">' + esc(notes.join(' ')) + '</p>' : '') +
       (explanation ? '<section class="markerExplanation" aria-labelledby="about-' + item.id + '"><h3 id="about-' + item.id + '">About this marker</h3><p>' + esc(explanation.text) + '</p><a href="' + esc(explanation.url) + '" target="_blank" rel="noopener noreferrer">' + (explanation.url.startsWith('https://medlineplus.gov/') ? 'MedlinePlus' : 'NHS') + ' · Learn more<span class="visuallyHidden"> about ' + esc(item.name) + ' (opens in a new tab)</span></a></section>' : '') +
       '<button type="button" class="closeHistory" data-close="' + item.id + '">Close details<span class="visuallyHidden"> for ' + esc(item.name) + '</span></button>';
@@ -338,7 +351,7 @@
     const height = 180, right = 24, top = 26, bottom = 140;
     let minimum = Infinity, maximum = -Infinity;
     for (const row of rows) { minimum = Math.min(minimum, row.valueNum); maximum = Math.max(maximum, row.valueNum); }
-    const bounds = item.reference ? [item.reference.lower, item.reference.upper].filter(value => value !== null) : [];
+    const bounds = item.reference ? item.reference.ranges.flatMap(range => [range.lower, range.upper]).filter(value => value !== null) : [];
     const domainMin = Math.min(minimum, ...bounds), domainMax = Math.max(maximum, ...bounds);
     const magnitude = Math.max(Math.abs(domainMin), Math.abs(domainMax)) || 1;
     const lo = domainMin / magnitude, hi = domainMax / magnitude, pad = (hi - lo || 1) * .16;

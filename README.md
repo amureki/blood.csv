@@ -59,7 +59,11 @@ Results keeps each marker and unit separate. Text, empty, and qualified values s
 
 Charts show dotted reference limits for recognised marker/unit pairs, using [University Medicine Frankfurt’s 2026 reference tables](https://www.unimedizin-ffm.de/einrichtungen/kliniken/zentrum-der-inneren-medizin/zentrallabor/referenzbereiche) applicable to a **male aged 30–40**. Each overlay states its limits, profile, and source. These are general lab references, not personal treatment targets or a uniform German standard; the reporting lab’s limits may differ. The chart scale includes both measurements and reference limits. Upper-only limits have one dotted line, without an invented lower bound. The same profile applies across the displayed history.
 
-No default overlays are assigned to lipids, glucose, HbA1c, or eGFR: treatment goals, fasting status, and clinical decision thresholds need separate context. Other unsupported markers or units also have no overlay. Reference unit aliases cover equivalent notations; white-cell and platelet references are scaled for counts per microlitre. Imported values and CSV fields are unchanged.
+Total cholesterol in mg/dl has a dotted line at 200, labelled **Desirable: < 200 mg/dl · Adults**, from [MedlinePlus](https://medlineplus.gov/cholesterollevelswhatyouneedtoknow.html). This is a general adult threshold, not a personal treatment target or a Frankfurt lab interval.
+
+LDL in mg/dl shows **Low-risk target: < 116 mg/dl**, from [Lipid-Liga](https://www.lipid-liga.de/wenig-cholesterin-im-blut-weniger-herzinfarkte-schlaganfaelle-und-durchblutungsstoerungen/). This comparison does not assign the user a cardiovascular risk category. HDL shows a lower reference boundary of **40 mg/dl for men**, from MedlinePlus; this is not a treatment target. Triglycerides show both **150 mg/dl fasting** and **175 mg/dl non-fasting**, from the [EAS / EFLM consensus](https://esc365.escardio.org/journal/26789), without assuming fasting status for imported records.
+
+No default overlays are assigned to non-HDL, glucose, HbA1c, or eGFR: treatment goals, fasting status, and clinical decision thresholds need separate context. Other unsupported markers or units also have no overlay. Reference unit aliases cover equivalent notations; white-cell and platelet references are scaled for counts per microlitre. Imported values and CSV fields are unchanged.
 
 ## Add data manually
 
