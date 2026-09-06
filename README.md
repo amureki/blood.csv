@@ -55,7 +55,11 @@ CSV table omits `source_file` and `original_name`. All other columns retain thei
 
 Files without the Results columns can still be opened in CSV table. Rows with an invalid date or missing marker remain in CSV table and are counted in a visible notice. Header-only files are supported.
 
-Results keeps each marker and unit separate. Text, empty, and qualified values such as “<5” remain in the history table; only exact finite numbers are plotted. Same-date results are retained without an arbitrary latest-value choice or ambiguous change calculation. Missing units suppress charts and changes. The viewer displays measurements and numerical changes without reference ranges, status flags, or clinical interpretation.
+Results keeps each marker and unit separate. Text, empty, and qualified values such as “<5” remain in the history table; only exact finite numbers are plotted. Same-date results are retained without an arbitrary latest-value choice or ambiguous change calculation. Missing units suppress charts and changes. The viewer displays measurements and numerical changes without status flags or clinical interpretation.
+
+Charts show dotted reference limits for recognised marker/unit pairs, using [University Medicine Frankfurt’s 2026 reference tables](https://www.unimedizin-ffm.de/einrichtungen/kliniken/zentrum-der-inneren-medizin/zentrallabor/referenzbereiche) applicable to a **male aged 30–40**. Each overlay states its limits, profile, and source. These are general lab references, not personal treatment targets or a uniform German standard; the reporting lab’s limits may differ. The chart scale includes both measurements and reference limits. Upper-only limits have one dotted line, without an invented lower bound. The same profile applies across the displayed history.
+
+No default overlays are assigned to lipids, glucose, HbA1c, or eGFR: treatment goals, fasting status, and clinical decision thresholds need separate context. Other unsupported markers or units also have no overlay. Reference unit aliases cover equivalent notations; white-cell and platelet references are scaled for counts per microlitre. Imported values and CSV fields are unchanged.
 
 ## Add data manually
 

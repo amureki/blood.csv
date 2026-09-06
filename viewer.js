@@ -74,6 +74,45 @@
     [['Height'], 'Your measured height. Together with weight, it is used to calculate body mass index (BMI).', 'https://medlineplus.gov/ency/article/007196.htm'],
     [['BMI'], 'Body mass index: weight in kilograms divided by height in metres squared. It does not distinguish muscle from body fat.', 'https://medlineplus.gov/ency/article/007196.htm']
   ].flatMap(([names, text, url]) => names.map(name => [name.toLowerCase(), { text, url }])));
+  const referenceSources = {
+    chemistry: 'https://www.unimedizin-ffm.de/fileadmin/redakteure/Fachkliniken/Innere-Medizin/Zentrallabor/Referenzbereiche_NEU/IB-AL2-003_V3_Referenzbereiche_Klinische_Chemie.pdf',
+    blood: 'https://www.unimedizin-ffm.de/fileadmin/redakteure/Fachkliniken/Innere-Medizin/Zentrallabor/Referenzbereiche_NEU/IB-AL-002_V3_Referenzbereiche_H%C3%A4matologie.pdf',
+    hormones: 'https://www.unimedizin-ffm.de/fileadmin/redakteure/Fachkliniken/Innere-Medizin/Zentrallabor/Referenzbereiche_NEU/IB-AL2-004_V3_Referenzbereiche_Hormone.pdf'
+  };
+  // Frankfurt's 2026 intervals applicable to a male aged 30–40; null means no stated bound.
+  // Count-density aliases are equivalent units. Only /µl needs a scaled reference interval.
+  const markerReferences = new Map([
+    [['ALT'], ['u/l'], null, 50, 'chemistry', 5],
+    [['AST'], ['u/l'], null, 40, 'chemistry', 5],
+    [['Gamma-GT', 'GGT'], ['u/l'], null, 60, 'chemistry', 5],
+    [['ALP', 'Alkaline phosphatase'], ['u/l'], 40, 130, 'chemistry', 1],
+    [['Creatine kinase (CK)', 'Creatine kinase', 'CK'], ['u/l'], null, 190, 'chemistry', 3],
+    [['LDH', 'Lactate dehydrogenase'], ['u/l'], null, 248, 'chemistry', 9],
+    [['Creatinine'], ['mg/dl'], .70, 1.20, 'chemistry', 8],
+    [['Urea'], ['mg/dl'], 19, 44, 'chemistry', 6],
+    [['White blood cells (WBC)', 'WBC'], ['gpt/l', '/nl', '10^9/l'], 3.92, 9.81, 'blood', 1],
+    [['White blood cells (WBC)', 'WBC'], ['/µl'], 3920, 9810, 'blood', 1],
+    [['Red blood cells (RBC)', 'RBC'], ['tpt/l', '/pl', '10^12/l'], 4.54, 5.77, 'blood', 1],
+    [['Hemoglobin', 'Haemoglobin'], ['g/dl'], 13.5, 17.5, 'blood', 1],
+    [['Hematocrit', 'Haematocrit'], ['%'], 39.6, 50.6, 'blood', 2],
+    [['MCV'], ['fl'], 80, 95.5, 'blood', 2],
+    [['MCH'], ['pg'], 27.6, 32.8, 'blood', 2],
+    [['MCHC'], ['g/dl'], 32.8, 36.6, 'blood', 2],
+    [['RDW', 'RDW-CV'], ['%'], 12.1, 14.8, 'blood', 2],
+    [['Platelets'], ['gpt/l', '/nl', '10^9/l'], 146, 328, 'blood', 3],
+    [['Platelets'], ['/µl'], 146000, 328000, 'blood', 3],
+    [['MPV'], ['fl'], 9.2, 12.5, 'blood', 3],
+    [['Sodium'], ['mmol/l'], 135, 145, 'chemistry', 10],
+    [['Potassium'], ['mmol/l'], 3.6, 4.8, 'chemistry', 8],
+    [['Chloride'], ['mmol/l'], 98, 107, 'chemistry', 3],
+    [['Bicarbonate'], ['mmol/l'], 22, 29, 'chemistry', 1],
+    [['Calcium'], ['mmol/l'], 2.09, 2.54, 'chemistry', 2],
+    [['Magnesium'], ['mmol/l'], .66, 1.07, 'chemistry', 10],
+    [['Ferritin'], ['ng/ml', 'µg/l'], 18, 360, 'chemistry', 4],
+    [['Iron', 'Serum iron'], ['µg/dl'], 59, 158, 'chemistry', 4],
+    [['TSH'], ['miu/l', 'µiu/ml', 'µu/ml'], .27, 4.2, 'hormones', 8],
+    [['Uric acid', 'Urate'], ['mg/dl'], 3.4, 7, 'chemistry', 6]
+  ].flatMap(([names, units, lower, upper, source, page]) => names.flatMap(name => units.map(unit => [JSON.stringify([name.toLowerCase(), unit]), { lower, upper, url: referenceSources[source] + '#page=' + page }]))));
   const decimalPattern = /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/i;
   const dateFormat = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
   const numberFormat = new Intl.NumberFormat('en-GB', { maximumSignificantDigits: 6 });
@@ -160,6 +199,7 @@
     }
     const prepared = [...nextSeries.values()].map(item => {
       item.rows.sort((a, b) => a.time - b.time || a.index - b.index);
+      item.reference = markerReferences.get(JSON.stringify([item.name.toLowerCase(), item.unit.toLowerCase().replaceAll('μ', 'µ')]));
       const counts = new Map();
       for (const row of item.rows) counts.set(row.date, (counts.get(row.date) || 0) + 1);
       return { ...item, mixedUnits: units.get(item.name).size > 1, duplicateDates: [...counts.values()].some(count => count > 1) };
@@ -207,6 +247,8 @@
     const numericRows = item.rows.filter(row => row.valueNum !== null);
     const canPlot = item.unit && numericRows.length > 1;
     const explanation = markerExplanations.get(item.name.toLowerCase());
+    const reference = item.reference;
+    const rangeLabel = reference ? (reference.lower === null ? '< ' + numberFormat.format(reference.upper) : numberFormat.format(reference.lower) + '–' + numberFormat.format(reference.upper)) + ' ' + item.unit : '';
     const notes = [];
     if (item.rows.length > 1) {
       if (!item.unit) notes.push('Unit not supplied; no chart or change is calculated.');
@@ -215,7 +257,7 @@
       if (item.duplicateDates) notes.push('Multiple results on a date are retained. Points are not connected.');
     }
     return historyTable(item) +
-      (canPlot ? '<div class="historyChart"><h3>Trend · ' + esc(item.unit) + '</h3><svg class="chart" data-chart="' + item.id + '" role="img" tabindex="0" aria-label="' + esc(item.name) + ' history. Tap a point or use Left and Right arrow keys for exact values. Every result is in the table above."></svg><p class="pointReadout" aria-live="polite">Tap a point for its date and value.</p></div>' : '') +
+      (canPlot ? '<div class="historyChart"><h3>Trend · ' + esc(item.unit) + '</h3>' + (reference ? '<p class="referenceLegend" id="reference-' + item.id + '">Reference: ' + esc(rangeLabel) + ' · Male, 30–40</p>' : '') + '<svg class="chart" data-chart="' + item.id + '" role="img" tabindex="0"' + (reference ? ' aria-describedby="reference-' + item.id + '"' : '') + ' aria-label="' + esc(item.name) + ' history. Tap a point or use Left and Right arrow keys for exact values. Every result is in the table above."></svg><p class="pointReadout" aria-live="polite">Tap a point for its date and value.</p>' + (reference ? '<p class="referenceSource"><a href="' + esc(reference.url) + '" target="_blank" rel="noopener noreferrer">Frankfurt lab ranges<span class="visuallyHidden"> (opens in a new tab)</span></a> · Your lab’s limits may differ.</p>' : '') + '</div>' : '') +
       (notes.length ? '<p class="quiet historyNote">' + esc(notes.join(' ')) + '</p>' : '') +
       (explanation ? '<section class="markerExplanation" aria-labelledby="about-' + item.id + '"><h3 id="about-' + item.id + '">About this marker</h3><p>' + esc(explanation.text) + '</p><a href="' + esc(explanation.url) + '" target="_blank" rel="noopener noreferrer">' + (explanation.url.startsWith('https://medlineplus.gov/') ? 'MedlinePlus' : 'NHS') + ' · Learn more<span class="visuallyHidden"> about ' + esc(item.name) + ' (opens in a new tab)</span></a></section>' : '') +
       '<button type="button" class="closeHistory" data-close="' + item.id + '">Close details<span class="visuallyHidden"> for ' + esc(item.name) + '</span></button>';
@@ -294,18 +336,23 @@
     const height = 180, right = 24, top = 26, bottom = 140;
     let minimum = Infinity, maximum = -Infinity;
     for (const row of rows) { minimum = Math.min(minimum, row.valueNum); maximum = Math.max(maximum, row.valueNum); }
-    const magnitude = Math.max(Math.abs(minimum), Math.abs(maximum)) || 1;
-    const lo = minimum / magnitude, hi = maximum / magnitude, pad = (hi - lo || 1) * .16;
+    const bounds = item.reference ? [item.reference.lower, item.reference.upper].filter(value => value !== null) : [];
+    const domainMin = Math.min(minimum, ...bounds), domainMax = Math.max(maximum, ...bounds);
+    const magnitude = Math.max(Math.abs(domainMin), Math.abs(domainMax)) || 1;
+    const lo = domainMin / magnitude, hi = domainMax / magnitude, pad = (hi - lo || 1) * .16;
     const axisValue = value => Math.abs(value) >= 1e7 || (value !== 0 && Math.abs(value) < .001) ? value.toExponential(2) : numberFormat.format(value);
     svg.setAttribute('viewBox', '0 0 ' + width + ' ' + height);
-    svg.innerHTML = '<title>' + esc(item.name + ' in ' + item.unit) + '</title><desc>All numeric results, spaced by calendar date. Use the table above for exact source values.</desc>' + [...new Set([minimum, maximum])].map(value => '<text class="yLabel" x="0" y="0">' + esc(axisValue(value)) + '</text>').join('');
+    svg.innerHTML = '<title>' + esc(item.name + ' in ' + item.unit) + '</title><desc>All numeric results, spaced by calendar date. Use the table above for exact source values.</desc>' + [...new Set([domainMin, domainMax])].map(value => '<text class="yLabel" x="0" y="0">' + esc(axisValue(value)) + '</text>').join('');
     const left = Math.min(width / 2, Math.max(64, ...[...svg.querySelectorAll('.yLabel')].map(label => label.getBBox().width + 12)));
     const start = Date.parse(dates[0] + 'T00:00:00Z'), end = Date.parse(dates.at(-1) + 'T00:00:00Z');
     const x = time => start === end ? left + (width - left - right) / 2 : left + (time - start) / (end - start) * (width - left - right);
     const y = value => bottom - (value / magnitude - (lo - pad)) / (hi - lo + 2 * pad) * (bottom - top);
     let html = '<title>' + esc(item.name + ' in ' + item.unit) + '</title><desc>All numeric results. Use Left and Right arrow keys or tap a point. Exact results are in the table above.</desc>';
-    [...new Set([minimum, maximum])].forEach(value => {
+    [...new Set([domainMin, domainMax])].forEach(value => {
       html += '<line class="chartGrid" x1="' + left + '" x2="' + (width - right) + '" y1="' + y(value) + '" y2="' + y(value) + '"/><text x="' + (left - 6) + '" y="' + (y(value) + 4) + '" text-anchor="end">' + esc(axisValue(value)) + '</text>';
+    });
+    bounds.forEach(value => {
+      html += '<line class="chartReference" x1="' + left + '" x2="' + (width - right) + '" y1="' + y(value) + '" y2="' + y(value) + '"><title>Reference limit: ' + esc(numberFormat.format(value) + ' ' + item.unit) + '</title></line>';
     });
     if (!item.duplicateDates) {
       let previous = null, path = '';
