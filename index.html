@@ -14,7 +14,7 @@
   <a class="skipLink" href="#main">Skip to results</a>
   <header class="pageHeader">
     <div class="bar">
-      <span class="wordmark">blood.csv</span>
+      <span class="wordmark" translate="no">blood.csv</span>
       <button id="importButton" type="button">Import CSV</button>
       <input id="csvFile" type="file" accept=".csv,text/csv" aria-label="Choose CSV file" hidden>
     </div>
@@ -33,11 +33,11 @@
     <div id="loaded" hidden>
       <div class="heading"><h1>Your blood test history</h1><p id="coverage" class="quiet"></p></div>
       <p id="dataNotice" class="dataNotice" hidden></p>
-      <nav class="viewNav" aria-label="Views">
-        <button type="button" data-view="results" aria-controls="resultsView" aria-current="page">Results</button>
-        <button type="button" data-view="csv" aria-controls="csvView">CSV table</button>
-      </nav>
-      <section id="resultsView" aria-labelledby="resultsTitle">
+      <div id="viewTabs" class="viewNav" role="tablist" aria-label="Views">
+        <button id="resultsTab" type="button" role="tab" data-view="results" aria-controls="resultsView" aria-selected="true" tabindex="0">Results</button>
+        <button id="csvTab" type="button" role="tab" data-view="csv" aria-controls="csvView" aria-selected="false" tabindex="-1">CSV table</button>
+      </div>
+      <section id="resultsView" role="tabpanel" aria-labelledby="resultsTab">
         <h2 id="resultsTitle" class="visuallyHidden">Results</h2>
         <div class="toolbar">
           <label><span class="visuallyHidden">Find a marker or group</span><input id="search" type="search" placeholder="Find a marker or group"></label>
@@ -49,7 +49,7 @@
           <tbody id="resultsBody"></tbody>
         </table>
       </section>
-      <section id="csvView" aria-labelledby="csvTitle" hidden>
+      <section id="csvView" role="tabpanel" aria-labelledby="csvTab" hidden>
         <div class="sectionHeading"><h2 id="csvTitle">CSV table</h2><span class="quiet">Every source record</span></div>
         <div class="toolbar">
           <label>Search table<input id="csvSearch" type="search" placeholder="Marker, date, lab or text"></label>

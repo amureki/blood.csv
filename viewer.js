@@ -124,8 +124,8 @@
     [['Uric acid', 'Urate'], ['mg/dl'], 3.4, 7, 'chemistry', 6]
   ].flatMap(([names, units, lower, upper, source, page]) => names.flatMap(name => units.map(unit => [JSON.stringify([name.toLowerCase(), unit]), { ...referenceSources[source], ranges: referenceSources[source].ranges ?? [{ lower, upper }], url: referenceSources[source].url + (page ? '#page=' + page : '') }]))));
   const decimalPattern = /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/i;
-  const dateFormat = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
-  const numberFormat = new Intl.NumberFormat('en-GB', { maximumSignificantDigits: 6 });
+  const dateFormat = new Intl.DateTimeFormat(navigator.languages, { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
+  const numberFormat = new Intl.NumberFormat(navigator.languages, { maximumSignificantDigits: 6 });
   const mobile = matchMedia('(max-width:560px)');
   const state = { view: 'results', query: '', csvQuery: '', csvOrder: 'source', expanded: null };
   let source = { header: [], names: [], records: [] }, series = [], dates = [], importVersion = 0;
@@ -134,6 +134,9 @@
 
   function esc(value) {
     return String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+  function sourceHTML(value) {
+    return '<span translate="no">' + esc(value) + '</span>';
   }
   function displayDate(value) {
     return dateFormat.format(new Date(value + 'T00:00:00Z'));
@@ -234,6 +237,7 @@
     ui.csvOrder.closest('label').hidden = !source.names.includes('date') && !source.names.includes('analyte');
     ui.csvScroll.scrollLeft = 0;
     render();
+    ui.viewTabs.querySelector('[aria-selected="true"]').focus();
   }
   function changeHTML(item, compact = false) {
     const first = item.rows[0], last = item.rows.at(-1);
@@ -245,13 +249,13 @@
     const delta = reason ? null : last.valueNum - first.valueNum;
     if (reason || !Number.isFinite(delta)) return '<small>' + esc(reason || 'Change cannot be calculated') + '</small>';
     const change = delta === 0 ? 'No change' : '<span class="visuallyHidden">' + (delta > 0 ? 'Increase of ' : 'Decrease of ') + '</span><span aria-hidden="true">' + (delta > 0 ? '↑' : '↓') + '</span> ' + numberFormat.format(Math.abs(delta));
-    const baseline = 'from ' + esc(first.value) + ' · ' + displayDate(first.date);
+    const baseline = 'from ' + sourceHTML(first.value) + ' · ' + displayDate(first.date);
     return '<span class="changeValue">' + change + '</span> ' + (compact ? '<small>since first</small><span class="visuallyHidden"> · ' + baseline + '</span>' : '<small>' + baseline + '</small>');
   }
   function historyTable(item) {
     const rows = item.rows.slice().reverse();
-    return '<h3 class="historyHeading">' + esc(item.name) + ' · ' + resultCount(rows.length) + '</h3><table class="historyTable" aria-label="Complete ' + esc(item.name + ' (' + (item.unit || 'no unit') + ')') + ' history"><colgroup><col class="dateColumn"><col class="valueColumn"></colgroup><thead><tr><th scope="col">Date</th><th scope="col" class="numeric">' + esc(item.unit || 'Value') + '</th></tr></thead><tbody>' + rows.map(row =>
-      '<tr><td>' + displayDate(row.date) + '<small class="sourceText">' + esc(row.lab || 'Lab not supplied') + '</small></td><td class="numeric"><strong class="sourceText">' + (row.value === '' ? '<span aria-label="Empty value">—</span>' : esc(row.value)) + '</strong></td></tr>'
+    return '<h3 class="historyHeading">' + sourceHTML(item.name) + ' · ' + resultCount(rows.length) + '</h3><table class="historyTable" aria-label="Complete ' + esc(item.name + ' (' + (item.unit || 'no unit') + ')') + ' history"><colgroup><col class="dateColumn"><col class="valueColumn"></colgroup><thead><tr><th scope="col">Date</th><th scope="col" class="numeric">' + (item.unit ? sourceHTML(item.unit) : 'Value') + '</th></tr></thead><tbody>' + rows.map(row =>
+      '<tr><td>' + displayDate(row.date) + '<small class="sourceText">' + (row.lab ? sourceHTML(row.lab) : 'Lab not supplied') + '</small></td><td class="numeric"><strong class="sourceText">' + (row.value === '' ? '<span aria-label="Empty value">—</span>' : sourceHTML(row.value)) + '</strong></td></tr>'
     ).join('') + '</tbody></table>';
   }
   function historyPanel(item) {
@@ -261,8 +265,8 @@
     const reference = item.reference;
     const rangeLabel = reference ? reference.ranges.map(range => {
       const value = range.lower === null ? '< ' + numberFormat.format(range.upper) : range.upper === null ? '≥ ' + numberFormat.format(range.lower) : numberFormat.format(range.lower) + '–' + numberFormat.format(range.upper);
-      return (range.label || reference.label) + ': ' + value + ' ' + item.unit;
-    }).join(' · ') + (reference.profile ? ' · ' + reference.profile : '') : '';
+      return esc(range.label || reference.label) + ': ' + sourceHTML(value + ' ' + item.unit);
+    }).join(' · ') + (reference.profile ? ' · ' + esc(reference.profile) : '') : '';
     const notes = [];
     if (item.rows.length > 1) {
       if (!item.unit) notes.push('Unit not supplied; no chart or change is calculated.');
@@ -271,10 +275,10 @@
       if (item.duplicateDates) notes.push('Multiple results on a date are retained. Points are not connected.');
     }
     return historyTable(item) +
-      (canPlot ? '<div class="historyChart"><h3>Trend · ' + esc(item.unit) + '</h3>' + (reference ? '<p class="referenceLegend" id="reference-' + item.id + '">' + esc(rangeLabel) + '</p>' : '') + '<svg class="chart" data-chart="' + item.id + '" role="img" tabindex="0"' + (reference ? ' aria-describedby="reference-' + item.id + '"' : '') + ' aria-label="' + esc(item.name) + ' history. Tap a point or use Left and Right arrow keys for exact values. Every result is in the table above."></svg><p class="pointReadout" aria-live="polite">Tap a point for its date and value.</p>' + (reference ? '<p class="referenceSource"><a href="' + esc(reference.url) + '" target="_blank" rel="noopener noreferrer">' + esc(reference.sourceName) + '<span class="visuallyHidden"> (opens in a new tab)</span></a>' + (reference.note ? ' · ' + esc(reference.note) : '') + '</p>' : '') + '</div>' : '') +
+      (canPlot ? '<div class="historyChart"><h3>Trend · ' + sourceHTML(item.unit) + '</h3>' + (reference ? '<p class="referenceLegend" id="reference-' + item.id + '">' + rangeLabel + '</p>' : '') + '<svg class="chart" data-chart="' + item.id + '" role="img" tabindex="0"' + (reference ? ' aria-describedby="reference-' + item.id + '"' : '') + ' aria-label="' + esc(item.name) + ' history. Tap a point or use Left and Right arrow keys for exact values. Every result is in the table above."></svg><p class="pointReadout" aria-live="polite">Tap a point for its date and value.</p>' + (reference ? '<p class="referenceSource"><a href="' + esc(reference.url) + '" target="_blank" rel="noopener noreferrer">' + esc(reference.sourceName) + '<span class="visuallyHidden"> (opens in a new tab)</span></a>' + (reference.note ? ' · ' + esc(reference.note) : '') + '</p>' : '') + '</div>' : '') +
       (notes.length ? '<p class="quiet historyNote">' + esc(notes.join(' ')) + '</p>' : '') +
-      (explanation ? '<section class="markerExplanation" aria-labelledby="about-' + item.id + '"><h3 id="about-' + item.id + '">About this marker</h3><p>' + esc(explanation.text) + '</p><a href="' + esc(explanation.url) + '" target="_blank" rel="noopener noreferrer">' + (explanation.url.startsWith('https://medlineplus.gov/') ? 'MedlinePlus' : 'NHS') + ' · Learn more<span class="visuallyHidden"> about ' + esc(item.name) + ' (opens in a new tab)</span></a></section>' : '') +
-      '<button type="button" class="closeHistory" data-close="' + item.id + '">Close details<span class="visuallyHidden"> for ' + esc(item.name) + '</span></button>';
+      (explanation ? '<section class="markerExplanation" aria-labelledby="about-' + item.id + '"><h3 id="about-' + item.id + '">About this marker</h3><p>' + esc(explanation.text) + '</p><a href="' + esc(explanation.url) + '" target="_blank" rel="noopener noreferrer">' + (explanation.url.startsWith('https://medlineplus.gov/') ? 'MedlinePlus' : 'NHS') + ' · Learn more<span class="visuallyHidden"> about ' + sourceHTML(item.name) + ' (opens in a new tab)</span></a></section>' : '') +
+      '<button type="button" class="closeHistory" data-close="' + item.id + '">Close details<span class="visuallyHidden"> for ' + sourceHTML(item.name) + '</span></button>';
   }
   function renderResults() {
     const query = state.query.trim().toLowerCase(), columns = mobile.matches ? 2 : 3;
@@ -287,13 +291,13 @@
       const last = item.rows.at(-1), latest = item.rows.filter(row => row.date === last.date);
       const opened = state.expanded === item.id;
       const action = opened ? 'Hide details' : 'View ' + resultCount(item.rows.length);
-      const change = changeHTML(item, mobile.matches);
+      const change = changeHTML(item);
       const composition = ['total cholesterol', 'cholesterol'].includes(item.name.toLowerCase()) ? ' (HDL + non-HDL)' : '';
       const heading = previousGroup !== item.group ? '<tr class="groupRow"><td colspan="' + columns + '"><h3>' + esc(item.group) + '<span class="quiet">' + counts.get(item.group) + (counts.get(item.group) === 1 ? ' marker' : ' markers') + '</span></h3></td></tr>' : '';
       previousGroup = item.group;
-      return heading + '<tr class="markerRow"><td><button type="button" class="historyButton" data-expand="' + item.id + '" aria-label="' + action + ' for ' + esc(item.name + composition + ' (' + (item.unit || 'no unit') + ')') + '" aria-expanded="' + opened + '" aria-controls="history-' + item.id + '"><span class="markerText"><span class="markerName">' + esc(item.name) + '</span>' + (composition ? '<span class="markerNote">' + composition + '</span>' : '') + '<span class="historyAction">' + action + '</span>' + (item.mixedUnits ? '<span class="markerNote">Separate unit</span>' : '') + '</span></button></td>' +
-        '<td class="numeric"><span class="latestValue"><strong class="sourceText">' + latest.map(row => row.value === '' ? '<span aria-label="Empty value">—</span>' : esc(row.value)).join('<br>') + '</strong><span class="unit">' + esc(item.unit || 'Unit not supplied') + '</span></span><small>' + displayDate(last.date) + '</small>' + (latest.length > 1 ? '<small>' + latest.length + ' results on this date</small>' : '') + (mobile.matches ? '<div class="mobileChange">' + change + '</div>' : '') + '</td>' +
-        (mobile.matches ? '' : '<td class="numeric changeColumn">' + change + '</td>') + '</tr>' +
+      return heading + '<tr class="markerRow"><td><button type="button" class="historyButton" data-expand="' + item.id + '" aria-label="' + action + ' for ' + esc(item.name + composition + ' (' + (item.unit || 'no unit') + ')') + '" aria-expanded="' + opened + '" aria-controls="history-' + item.id + '"><span class="markerText"><span class="markerName" translate="no">' + esc(item.name) + '</span>' + (composition ? '<span class="markerNote" translate="no">' + composition + '</span>' : '') + '<span class="historyAction">' + action + '</span>' + (item.mixedUnits ? '<span class="markerNote">Separate unit</span>' : '') + '</span></button></td>' +
+        '<td class="numeric"><span class="latestValue"><strong class="sourceText">' + latest.map(row => row.value === '' ? '<span aria-label="Empty value">—</span>' : sourceHTML(row.value)).join('<br>') + '</strong><span class="unit">' + (item.unit ? sourceHTML(item.unit) : 'Unit not supplied') + '</span></span><small>' + displayDate(last.date) + '</small>' + (latest.length > 1 ? '<small>' + latest.length + ' results on this date</small>' : '') + '<div class="mobileChange">' + changeHTML(item, true) + '</div></td>' +
+        '<td class="numeric changeColumn">' + change + '</td></tr>' +
         '<tr id="history-' + item.id + '"' + (opened ? '' : ' hidden') + '><td class="expandedCell" colspan="' + columns + '">' + (opened ? historyPanel(item) : '') + '</td></tr>';
     }).join('') || '<tr><td colspan="' + columns + '">' + (!series.length ? 'No usable marker histories. Open CSV table to see the source records.' : 'No matching markers. Change or clear the search.') + '</td></tr>';
   }
@@ -318,8 +322,8 @@
       return a.index - b.index;
     });
     ui.csvCount.textContent = rows.length + ' of ' + source.records.length + ' rows · ' + fields.length + ' columns';
-    ui.csvHead.innerHTML = '<tr>' + fields.map(field => '<th scope="col" class="' + field.className + '">' + esc(Object.hasOwn(labels, field.key) ? labels[field.key] : field.name || 'Column ' + (field.index + 1)) + '</th>').join('') + '</tr>';
-    ui.csvBody.innerHTML = !fields.length ? '<tr><td>No table columns to display.</td></tr>' : rows.map(record => '<tr>' + fields.map(field => '<td class="' + field.className + '">' + esc(record.cells[field.index]) + '</td>').join('') + '</tr>').join('') || '<tr><td colspan="' + fields.length + '">' + (source.records.length ? 'No matching rows. Change or clear the search.' : 'This CSV contains column headings but no records.') + '</td></tr>';
+    ui.csvHead.innerHTML = '<tr>' + fields.map(field => '<th scope="col" class="' + field.className + '">' + (Object.hasOwn(labels, field.key) ? esc(labels[field.key]) : field.name ? sourceHTML(field.name) : 'Column ' + (field.index + 1)) + '</th>').join('') + '</tr>';
+    ui.csvBody.innerHTML = !fields.length ? '<tr><td>No table columns to display.</td></tr>' : rows.map(record => '<tr>' + fields.map(field => '<td class="' + field.className + '" translate="no">' + esc(record.cells[field.index]) + '</td>').join('') + '</tr>').join('') || '<tr><td colspan="' + fields.length + '">' + (source.records.length ? 'No matching rows. Change or clear the search.' : 'This CSV contains column headings but no records.') + '</td></tr>';
     requestAnimationFrame(updateScrollControls);
   }
   function updateScrollControls() {
@@ -332,8 +336,9 @@
     ui.resultsView.hidden = state.view !== 'results';
     ui.csvView.hidden = state.view !== 'csv';
     document.querySelectorAll('[data-view]').forEach(button => {
-      if (button.dataset.view === state.view) button.setAttribute('aria-current', 'page');
-      else button.removeAttribute('aria-current');
+      const selected = button.dataset.view === state.view;
+      button.setAttribute('aria-selected', String(selected));
+      button.tabIndex = selected ? 0 : -1;
     });
     if (state.view === 'results') renderResults(); else renderCSV();
     refreshCharts();
@@ -357,14 +362,14 @@
     const lo = domainMin / magnitude, hi = domainMax / magnitude, pad = (hi - lo || 1) * .16;
     const axisValue = value => Math.abs(value) >= 1e7 || (value !== 0 && Math.abs(value) < .001) ? value.toExponential(2) : numberFormat.format(value);
     svg.setAttribute('viewBox', '0 0 ' + width + ' ' + height);
-    svg.innerHTML = '<title>' + esc(item.name + ' in ' + item.unit) + '</title><desc>All numeric results, spaced by calendar date. Use the table above for exact source values.</desc>' + [...new Set([domainMin, domainMax])].map(value => '<text class="yLabel" x="0" y="0">' + esc(axisValue(value)) + '</text>').join('');
+    svg.innerHTML = '<title>' + esc(item.name + ' in ' + item.unit) + '</title><desc>All numeric results, spaced by calendar date. Use the table above for exact source values.</desc>' + [...new Set([domainMin, domainMax])].map(value => '<text translate="no" class="yLabel" x="0" y="0">' + esc(axisValue(value)) + '</text>').join('');
     const left = Math.min(width / 2, Math.max(64, ...[...svg.querySelectorAll('.yLabel')].map(label => label.getBBox().width + 12)));
     const start = Date.parse(dates[0] + 'T00:00:00Z'), end = Date.parse(dates.at(-1) + 'T00:00:00Z');
     const x = time => start === end ? left + (width - left - right) / 2 : left + (time - start) / (end - start) * (width - left - right);
     const y = value => bottom - (value / magnitude - (lo - pad)) / (hi - lo + 2 * pad) * (bottom - top);
     let html = '<title>' + esc(item.name + ' in ' + item.unit) + '</title><desc>All numeric results. Use Left and Right arrow keys or tap a point. Exact results are in the table above.</desc>';
     [...new Set([domainMin, domainMax])].forEach(value => {
-      html += '<line class="chartGrid" x1="' + left + '" x2="' + (width - right) + '" y1="' + y(value) + '" y2="' + y(value) + '"/><text x="' + (left - 6) + '" y="' + (y(value) + 4) + '" text-anchor="end">' + esc(axisValue(value)) + '</text>';
+      html += '<line class="chartGrid" x1="' + left + '" x2="' + (width - right) + '" y1="' + y(value) + '" y2="' + y(value) + '"/><text translate="no" x="' + (left - 6) + '" y="' + (y(value) + 4) + '" text-anchor="end">' + esc(axisValue(value)) + '</text>';
     });
     bounds.forEach(value => {
       html += '<line class="chartReference" x1="' + left + '" x2="' + (width - right) + '" y1="' + y(value) + '" y2="' + y(value) + '"><title>Reference limit: ' + esc(numberFormat.format(value) + ' ' + item.unit) + '</title></line>';
@@ -392,6 +397,7 @@
       if (labelsPlaced >= Math.floor(width / 28) || labelsAttempted++ >= Math.ceil(width / 7)) break;
       const row = rows[index], label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
       label.setAttribute('class', 'valueLabel');
+      label.setAttribute('translate', 'no');
       label.setAttribute('x', x(row.time));
       label.setAttribute('text-anchor', index === 0 ? 'start' : index === rows.length - 1 ? 'end' : 'middle');
       label.textContent = row.value;
@@ -413,7 +419,7 @@
       const guide = svg.querySelector('.chartGuide'), selected = svg.querySelector('.chartSelected');
       guide.setAttribute('x1', x(row.time)); guide.setAttribute('x2', x(row.time)); guide.setAttribute('visibility', 'visible');
       selected.setAttribute('cx', x(row.time)); selected.setAttribute('cy', y(row.valueNum)); selected.setAttribute('visibility', 'visible');
-      svg.parentElement.querySelector('.pointReadout').textContent = displayDate(row.date) + ' · ' + row.value + ' ' + row.unit + ' · ' + (row.lab || 'Lab not supplied');
+      svg.parentElement.querySelector('.pointReadout').innerHTML = esc(displayDate(row.date)) + ' · ' + sourceHTML(row.value + ' ' + row.unit) + ' · ' + (row.lab ? sourceHTML(row.lab) : 'Lab not supplied');
     };
     svg.onclick = event => {
       const rect = svg.getBoundingClientRect(), px = event.clientX - rect.left, py = event.clientY - rect.top;
@@ -446,6 +452,16 @@
     } finally { if (version === importVersion) ui.csvFile.value = ''; }
   };
   ui.demoButton.onclick = () => { importVersion++; loadCSV(ui['demo-csv'].textContent.trim(), 'Demo data', true); };
+  ui.viewTabs.onkeydown = event => {
+    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+    const tabs = [...ui.viewTabs.querySelectorAll('[role="tab"]')];
+    const current = tabs.indexOf(event.target);
+    if (current === -1) return;
+    event.preventDefault();
+    const index = event.key === 'Home' ? 0 : event.key === 'End' ? tabs.length - 1 : (current + (event.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length;
+    tabs.forEach((tab, position) => { tab.tabIndex = position === index ? 0 : -1; });
+    tabs[index].focus();
+  };
   ui.loaded.addEventListener('click', event => {
     const button = event.target.closest('button');
     if (!button) return;
@@ -474,5 +490,7 @@
   }
   ui.csvScroll.addEventListener('scroll', updateScrollControls, { passive: true });
   new ResizeObserver(updateScrollControls).observe(ui.csvScroll);
-  mobile.addEventListener('change', () => { if (!ui.loaded.hidden && state.view === 'results') { renderResults(); refreshCharts(); } });
+  mobile.addEventListener('change', () => {
+    ui.resultsBody.querySelectorAll(':scope > tr > td[colspan]').forEach(cell => { cell.colSpan = mobile.matches ? 2 : 3; });
+  });
 })();
