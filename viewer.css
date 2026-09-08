@@ -56,6 +56,7 @@ strong { font-weight: 600; }
 .historyButton:hover, .historyButton:active { background: transparent; }
 .historyButton:hover .historyAction { text-decoration-thickness: 2px; }
 .historyAction { display: block; margin-top: 4px; color: var(--accent); font-size: 12px; line-height: 1.4; text-decoration: underline; text-underline-offset: 3px; }
+.trendPreview { display: block; width: 100%; max-width: 280px; height: 48px; margin-top: 6px; }
 .markerNote { display: block; color: var(--muted); font-size: 12px; }
 .changeValue { display: block; font-size: 16px; font-weight: 600; line-height: 1.3; }
 .mobileChange { display: none; margin-top: 4px; line-height: 1.4; }
@@ -71,7 +72,7 @@ strong { font-weight: 600; }
 .groupRow h3 { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
 .groupRow h3 span { flex-shrink: 0; font-weight: 400; }
 .expandedCell { padding: 16px var(--table-gutter); background: var(--soft); }
-.historyChart { margin-top: 16px; }
+.historyChart { margin-bottom: 16px; }
 .historyHeading { margin: 0 0 8px; }
 .historyTable { table-layout: fixed; font-size: 14px; }
 .historyTable th, .historyTable td { padding-inline: 0; }

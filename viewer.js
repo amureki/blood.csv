@@ -276,8 +276,8 @@
       else if (numericRows.length !== item.rows.length) notes.push((item.rows.length - numericRows.length) + ' text or qualified values are listed in the table; they are not plotted as exact numbers.');
       if (item.duplicateDates) notes.push('Multiple results on a date are retained. Points are not connected.');
     }
-    return historyTable(item) +
-      (canPlot ? '<div class="historyChart"><h3>Trend · ' + sourceHTML(item.unit) + '</h3>' + (reference ? '<p class="referenceLegend" id="reference-' + item.id + '">' + rangeLabel + '</p>' : '') + '<svg class="chart" data-chart="' + item.id + '" role="img" tabindex="0"' + (reference ? ' aria-describedby="reference-' + item.id + '"' : '') + ' aria-label="' + esc(item.name) + ' history. Tap a point or use Left and Right arrow keys for exact values. Every result is in the table above."></svg><p class="pointReadout" aria-live="polite">Tap a point for its date and value.</p>' + (reference ? '<p class="referenceSource"><a href="' + esc(reference.url) + '" target="_blank" rel="noopener noreferrer">' + esc(reference.sourceName) + '<span class="visuallyHidden"> (opens in a new tab)</span></a>' + (reference.note ? ' · ' + esc(reference.note) : '') + '</p>' : '') + '</div>' : '') +
+    return (canPlot ? '<div class="historyChart"><h3>Trend · ' + sourceHTML(item.unit) + '</h3>' + (reference ? '<p class="referenceLegend" id="reference-' + item.id + '">' + rangeLabel + '</p>' : '') + '<svg class="chart" data-chart="' + item.id + '" role="img" tabindex="0"' + (reference ? ' aria-describedby="reference-' + item.id + '"' : '') + ' aria-label="' + esc(item.name) + ' history. Tap a point or use Left and Right arrow keys for exact values. Every result is in the table below."></svg><p class="pointReadout" aria-live="polite">Tap a point for its date and value.</p>' + (reference ? '<p class="referenceSource"><a href="' + esc(reference.url) + '" target="_blank" rel="noopener noreferrer">' + esc(reference.sourceName) + '<span class="visuallyHidden"> (opens in a new tab)</span></a>' + (reference.note ? ' · ' + esc(reference.note) : '') + '</p>' : '') + '</div>' : '') +
+      historyTable(item) +
       (notes.length ? '<p class="quiet historyNote">' + esc(notes.join(' ')) + '</p>' : '') +
       (explanation ? '<section class="markerExplanation" aria-labelledby="about-' + item.id + '"><h3 id="about-' + item.id + '">About this marker</h3><p>' + esc(explanation.text) + '</p><a href="' + esc(explanation.url) + '" target="_blank" rel="noopener noreferrer">' + (explanation.url.startsWith('https://medlineplus.gov/') ? 'MedlinePlus' : 'NHS') + ' · Learn more<span class="visuallyHidden"> about ' + sourceHTML(item.name) + ' (opens in a new tab)</span></a></section>' : '') +
       '<button type="button" class="closeHistory" data-close="' + item.id + '">Close details<span class="visuallyHidden"> for ' + sourceHTML(item.name) + '</span></button>';
@@ -293,11 +293,12 @@
       const last = item.rows.at(-1), latest = item.rows.filter(row => row.date === last.date);
       const opened = state.expanded === item.id;
       const action = opened ? 'Hide details' : 'View ' + resultCount(item.rows.length);
+      const preview = !opened && item.unit && item.rows.filter(row => row.valueNum !== null).length > 1 ? '<svg class="trendPreview" data-chart="' + item.id + '" aria-hidden="true" focusable="false"></svg>' : '';
       const change = changeHTML(item);
       const composition = ['total cholesterol', 'cholesterol'].includes(item.name.toLowerCase()) ? ' (HDL + non-HDL)' : '';
       const heading = previousGroup !== item.group ? '<tr class="groupRow"><td colspan="' + columns + '"><h3>' + esc(item.group) + '<span class="quiet">' + counts.get(item.group) + (counts.get(item.group) === 1 ? ' marker' : ' markers') + '</span></h3></td></tr>' : '';
       previousGroup = item.group;
-      return heading + '<tr class="markerRow"><td><button type="button" class="historyButton" data-expand="' + item.id + '" aria-label="' + action + ' for ' + esc(item.name + composition + ' (' + (item.unit || 'no unit') + ')') + '" aria-expanded="' + opened + '" aria-controls="history-' + item.id + '"><span class="markerText"><span class="markerName" translate="no">' + esc(item.name) + '</span>' + (composition ? '<span class="markerNote" translate="no">' + composition + '</span>' : '') + '<span class="historyAction">' + action + '</span>' + (item.mixedUnits ? '<span class="markerNote">Separate unit</span>' : '') + '</span></button></td>' +
+      return heading + '<tr class="markerRow"><td><button type="button" class="historyButton" data-expand="' + item.id + '" aria-label="' + action + ' for ' + esc(item.name + composition + ' (' + (item.unit || 'no unit') + ')') + '" aria-expanded="' + opened + '" aria-controls="history-' + item.id + '"><span class="markerText"><span class="markerName" translate="no">' + esc(item.name) + '</span>' + (composition ? '<span class="markerNote" translate="no">' + composition + '</span>' : '') + (item.mixedUnits ? '<span class="markerNote">Separate unit</span>' : '') + '</span>' + preview + '<span class="historyAction">' + action + '</span></button></td>' +
         '<td class="numeric"><span class="latestValue"><strong class="sourceText">' + latest.map(row => row.value === '' ? '<span aria-label="Empty value">—</span>' : sourceHTML(row.value)).join('<br>') + '</strong><span class="unit">' + (item.unit ? sourceHTML(item.unit) : 'Unit not supplied') + '</span></span><small>' + displayDate(last.date) + '</small>' + (latest.length > 1 ? '<small>' + latest.length + ' results on this date</small>' : '') + '<div class="mobileChange">' + changeHTML(item, true) + '</div></td>' +
         '<td class="numeric changeColumn">' + change + '</td></tr>' +
         '<tr id="history-' + item.id + '"' + (opened ? '' : ' hidden') + '><td class="expandedCell" colspan="' + columns + '">' + (opened ? historyPanel(item) : '') + '</td></tr>';
@@ -348,32 +349,34 @@
   function refreshCharts() {
     chartObserver.disconnect();
     if (state.view !== 'results') return;
-    ui.resultsBody.querySelectorAll('.chart').forEach(svg => { drawChart(svg); chartObserver.observe(svg); });
+    ui.resultsBody.querySelectorAll('[data-chart]').forEach(svg => { drawChart(svg); chartObserver.observe(svg); });
   }
   function drawChart(svg) {
     const item = series[Number(svg.dataset.chart)], width = svg.getBoundingClientRect().width;
     if (!width || !item) return;
     const rows = item.rows.filter(row => row.valueNum !== null);
     if (!rows.length) return;
-    const height = 180, right = 24, top = 26, bottom = 140;
+    const preview = svg.classList.contains('trendPreview');
+    const height = preview ? 48 : 180, right = preview ? 4 : 24, top = preview ? 4 : 26, bottom = preview ? 44 : 140;
     let minimum = Infinity, maximum = -Infinity;
     for (const row of rows) { minimum = Math.min(minimum, row.valueNum); maximum = Math.max(maximum, row.valueNum); }
     const bounds = item.reference ? item.reference.ranges.flatMap(range => [range.lower, range.upper]).filter(value => value !== null) : [];
     const domainMin = Math.min(minimum, ...bounds), domainMax = Math.max(maximum, ...bounds);
     const magnitude = Math.max(Math.abs(domainMin), Math.abs(domainMax)) || 1;
-    const lo = domainMin / magnitude, hi = domainMax / magnitude, pad = (hi - lo || 1) * .16;
+    // A minimum scale margin prevents tiny changes from filling the chart height.
+    const lo = domainMin / magnitude, hi = domainMax / magnitude, pad = Math.max((hi - lo) * .16, .05);
     const axisValue = value => Math.abs(value) >= 1e7 || (value !== 0 && Math.abs(value) < .001) ? value.toExponential(2) : numberFormat.format(value);
     svg.setAttribute('viewBox', '0 0 ' + width + ' ' + height);
-    svg.innerHTML = '<title>' + esc(item.name + ' in ' + item.unit) + '</title><desc>All numeric results, spaced by calendar date. Use the table above for exact source values.</desc>' + [...new Set([domainMin, domainMax])].map(value => '<text translate="no" class="yLabel" x="0" y="0">' + esc(axisValue(value)) + '</text>').join('');
-    const left = Math.min(width / 2, Math.max(64, ...[...svg.querySelectorAll('.yLabel')].map(label => label.getBBox().width + 12)));
+    svg.innerHTML = preview ? '' : '<title>' + esc(item.name + ' in ' + item.unit) + '</title><desc>All numeric results, spaced by calendar date. Use the table below for exact source values.</desc>' + [...new Set([domainMin, domainMax])].map(value => '<text translate="no" class="yLabel" x="0" y="0">' + esc(axisValue(value)) + '</text>').join('');
+    const left = preview ? 4 : Math.min(width / 2, Math.max(64, ...[...svg.querySelectorAll('.yLabel')].map(label => label.getBBox().width + 12)));
     const start = Date.parse(dates[0] + 'T00:00:00Z'), end = Date.parse(dates.at(-1) + 'T00:00:00Z');
     const x = time => start === end ? left + (width - left - right) / 2 : left + (time - start) / (end - start) * (width - left - right);
     const y = value => bottom - (value / magnitude - (lo - pad)) / (hi - lo + 2 * pad) * (bottom - top);
-    let html = '<title>' + esc(item.name + ' in ' + item.unit) + '</title><desc>All numeric results. Use Left and Right arrow keys or tap a point. Exact results are in the table above.</desc>';
-    [...new Set([domainMin, domainMax])].forEach(value => {
+    let html = preview ? '' : '<title>' + esc(item.name + ' in ' + item.unit) + '</title><desc>All numeric results. Use Left and Right arrow keys or tap a point. Exact results are in the table below.</desc>';
+    if (!preview) [...new Set([domainMin, domainMax])].forEach(value => {
       html += '<line class="chartGrid" x1="' + left + '" x2="' + (width - right) + '" y1="' + y(value) + '" y2="' + y(value) + '"/><text translate="no" x="' + (left - 6) + '" y="' + (y(value) + 4) + '" text-anchor="end">' + esc(axisValue(value)) + '</text>';
     });
-    bounds.forEach(value => {
+    if (!preview) bounds.forEach(value => {
       html += '<line class="chartReference" x1="' + left + '" x2="' + (width - right) + '" y1="' + y(value) + '" y2="' + y(value) + '"><title>Reference limit: ' + esc(numberFormat.format(value) + ' ' + item.unit) + '</title></line>';
     });
     if (!item.duplicateDates) {
@@ -386,8 +389,9 @@
       html += '<path class="chartLine" d="' + path + '"/>';
     }
     rows.forEach(row => {
-      html += '<circle class="chartPoint" cx="' + x(row.time) + '" cy="' + y(row.valueNum) + '" r="3"/>';
+      html += '<circle class="chartPoint" cx="' + x(row.time) + '" cy="' + y(row.valueNum) + '" r="' + (preview ? 2 : 3) + '"/>';
     });
+    if (preview) { svg.innerHTML = html; return; }
     html += '<text x="' + left + '" y="174" text-anchor="start">' + displayDate(dates[0]) + '</text>';
     if (start !== end) html += '<text x="' + (width - right) + '" y="174" text-anchor="end">' + displayDate(dates.at(-1)) + '</text>';
     html += '<g class="valueLabels"></g><line class="chartGuide" y1="' + top + '" y2="' + bottom + '" visibility="hidden"/><circle class="chartSelected" r="5" visibility="hidden"/>';
