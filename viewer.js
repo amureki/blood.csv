@@ -73,7 +73,7 @@
     [['Weight'], 'Your body weight at the time of measurement. It is one of the measurements used to calculate body mass index (BMI).', 'https://medlineplus.gov/ency/article/007196.htm'],
     [['Height'], 'Your measured height. Together with weight, it is used to calculate body mass index (BMI).', 'https://medlineplus.gov/ency/article/007196.htm'],
     [['BMI'], 'Body mass index: weight in kilograms divided by height in metres squared. It does not distinguish muscle from body fat.', 'https://medlineplus.gov/ency/article/007196.htm']
-  ].flatMap(([names, text, url]) => names.map(name => [name.toLowerCase(), { text, url }])));
+  ].flatMap(([names, text, url]) => names.map(name => [name.toLowerCase(), { aliases: names, text, url }])));
   const labReference = { label: 'Reference', profile: 'Male, 30–40', sourceName: 'Frankfurt lab ranges', note: 'Your lab’s limits may differ.' };
   const referenceSources = {
     chemistry: { ...labReference, url: 'https://www.unimedizin-ffm.de/fileadmin/redakteure/Fachkliniken/Innere-Medizin/Zentrallabor/Referenzbereiche_NEU/IB-AL2-003_V3_Referenzbereiche_Klinische_Chemie.pdf' },
@@ -213,6 +213,7 @@
     const prepared = [...nextSeries.values()].map(item => {
       item.rows.sort((a, b) => a.time - b.time || a.index - b.index);
       item.reference = markerReferences.get(JSON.stringify([item.name.toLowerCase(), item.unit.toLowerCase().replaceAll('μ', 'µ')]));
+      item.searchText = [item.name, item.unit, item.group, ...(markerExplanations.get(item.name.toLowerCase())?.aliases ?? [])].join(' ').toLowerCase();
       const counts = new Map();
       for (const row of item.rows) counts.set(row.date, (counts.get(row.date) || 0) + 1);
       return { ...item, mixedUnits: units.get(item.name).size > 1, duplicateDates: [...counts.values()].some(count => count > 1) };
@@ -250,8 +251,8 @@
     const delta = reason ? null : last.valueNum - previous.valueNum;
     if (reason || !Number.isFinite(delta)) return '<small>' + esc(reason || 'Change cannot be calculated') + '</small>';
     const change = delta === 0 ? 'No change' : '<span class="visuallyHidden">' + (delta > 0 ? 'Increase of ' : 'Decrease of ') + '</span><span aria-hidden="true">' + (delta > 0 ? '↑' : '↓') + '</span> ' + numberFormat.format(Math.abs(delta));
-    const baseline = 'from ' + sourceHTML(previous.value) + ' · ' + displayDate(previous.date);
-    return '<span class="changeValue">' + change + '</span> ' + (compact ? '<small>since previous test</small><span class="visuallyHidden"> · ' + baseline + '</span>' : '<small>' + baseline + '</small>');
+    const baseline = 'from ' + sourceHTML(previous.value), date = '<time datetime="' + previous.date + '">' + displayDate(previous.date) + '</time>';
+    return '<span class="changeValue">' + change + '</span> ' + (compact ? '<small>since ' + date + '</small><span class="visuallyHidden"> · ' + baseline + '</span>' : '<small>' + baseline + ' · ' + date + '</small>');
   }
   function historyTable(item) {
     const rows = item.rows.slice().reverse();
@@ -283,7 +284,7 @@
   }
   function renderResults() {
     const query = state.query.trim().toLowerCase(), columns = mobile.matches ? 2 : 3;
-    const visible = series.filter(item => (item.name + ' ' + item.unit + ' ' + item.group).toLowerCase().includes(query)).sort((a, b) => groupOrder.get(a.group) - groupOrder.get(b.group) || (markerOrder.get(a.name.toLowerCase()) ?? 0) - (markerOrder.get(b.name.toLowerCase()) ?? 0) || a.name.localeCompare(b.name) || a.unit.localeCompare(b.unit));
+    const visible = series.filter(item => item.searchText.includes(query)).sort((a, b) => groupOrder.get(a.group) - groupOrder.get(b.group) || (markerOrder.get(a.name.toLowerCase()) ?? 0) - (markerOrder.get(b.name.toLowerCase()) ?? 0) || a.name.localeCompare(b.name) || a.unit.localeCompare(b.unit));
     const counts = new Map();
     for (const item of visible) counts.set(item.group, (counts.get(item.group) || 0) + 1);
     ui.resultCount.textContent = visible.length + ' of ' + series.length + ' markers · ' + counts.size + (counts.size === 1 ? ' group' : ' groups');
@@ -473,7 +474,7 @@
       renderResults(); refreshCharts();
       const opener = ui.resultsBody.querySelector('[data-expand="' + id + '"]');
       opener.focus({ preventScroll: true });
-      if (button.dataset.close !== undefined) opener.scrollIntoView({ block: 'nearest' });
+      opener.closest('.markerRow').scrollIntoView({ block: state.expanded === id ? 'start' : 'nearest' });
     }
   });
   ui.search.oninput = event => { state.query = event.target.value; renderResults(); refreshCharts(); };

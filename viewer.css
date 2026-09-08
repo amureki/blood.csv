@@ -61,6 +61,7 @@ strong { font-weight: 600; }
 .mobileChange { display: none; margin-top: 4px; line-height: 1.4; }
 .mobileChange .changeValue { display: inline; font-size: 13px; }
 .mobileChange small { display: inline; }
+.mobileChange time { display: inline-block; }
 .latestValue { display: flex; justify-content: flex-end; align-items: baseline; flex-wrap: wrap; gap: 0 4px; line-height: 1.3; }
 .latestValue strong { min-width: 0; max-width: 100%; font-size: 18px; }
 .unit { color: var(--muted); font-size: 12px; }
