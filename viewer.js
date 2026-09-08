@@ -240,17 +240,18 @@
     ui.viewTabs.querySelector('[aria-selected="true"]').focus();
   }
   function changeHTML(item, compact = false) {
-    const first = item.rows[0], last = item.rows.at(-1);
+    const last = item.rows.at(-1);
+    const previous = item.rows.findLast(row => row.date < last.date);
     let reason = '';
-    if (first.date === last.date) reason = 'No earlier date';
-    else if (item.rows.filter(row => row.date === first.date).length > 1 || item.rows.filter(row => row.date === last.date).length > 1) reason = 'Multiple results on date';
+    if (!previous) reason = 'No earlier date';
+    else if (item.rows.filter(row => row.date === previous.date).length > 1 || item.rows.filter(row => row.date === last.date).length > 1) reason = 'Multiple results on date';
     else if (!item.unit) reason = 'Unit not supplied';
-    else if (first.valueNum === null || last.valueNum === null) reason = 'No exact numeric comparison';
-    const delta = reason ? null : last.valueNum - first.valueNum;
+    else if (previous.valueNum === null || last.valueNum === null) reason = 'No exact numeric comparison';
+    const delta = reason ? null : last.valueNum - previous.valueNum;
     if (reason || !Number.isFinite(delta)) return '<small>' + esc(reason || 'Change cannot be calculated') + '</small>';
     const change = delta === 0 ? 'No change' : '<span class="visuallyHidden">' + (delta > 0 ? 'Increase of ' : 'Decrease of ') + '</span><span aria-hidden="true">' + (delta > 0 ? '↑' : '↓') + '</span> ' + numberFormat.format(Math.abs(delta));
-    const baseline = 'from ' + sourceHTML(first.value) + ' · ' + displayDate(first.date);
-    return '<span class="changeValue">' + change + '</span> ' + (compact ? '<small>since first</small><span class="visuallyHidden"> · ' + baseline + '</span>' : '<small>' + baseline + '</small>');
+    const baseline = 'from ' + sourceHTML(previous.value) + ' · ' + displayDate(previous.date);
+    return '<span class="changeValue">' + change + '</span> ' + (compact ? '<small>since previous test</small><span class="visuallyHidden"> · ' + baseline + '</span>' : '<small>' + baseline + '</small>');
   }
   function historyTable(item) {
     const rows = item.rows.slice().reverse();
