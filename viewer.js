@@ -126,6 +126,7 @@
   const decimalPattern = /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/i;
   const dateFormat = new Intl.DateTimeFormat(navigator.languages, { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
   const numberFormat = new Intl.NumberFormat(navigator.languages, { maximumSignificantDigits: 6 });
+  const percentFormat = new Intl.NumberFormat(navigator.languages, { style: 'percent', maximumFractionDigits: 1 });
   const mobile = matchMedia('(max-width:560px)');
   const state = { view: 'results', query: '', csvQuery: '', csvOrder: 'source', expanded: null };
   let source = { header: [], names: [], records: [] }, series = [], dates = [], importVersion = 0;
@@ -251,8 +252,10 @@
     const delta = reason ? null : last.valueNum - previous.valueNum;
     if (reason || !Number.isFinite(delta)) return '<small>' + esc(reason || 'Change cannot be calculated') + '</small>';
     const change = delta === 0 ? 'No change' : '<span class="visuallyHidden">' + (delta > 0 ? 'Increase of ' : 'Decrease of ') + '</span><span aria-hidden="true">' + (delta > 0 ? '↑' : '↓') + '</span> ' + numberFormat.format(Math.abs(delta));
+    const ratio = previous.valueNum > 0 ? Math.abs(delta / previous.valueNum) : null;
+    const percentage = delta !== 0 && ratio !== null && Number.isFinite(ratio * 100) ? ' <span class="changePercent">(' + esc(ratio < .001 ? '<' + percentFormat.format(.001) : percentFormat.format(ratio)) + ')</span><span class="visuallyHidden"> of the previous result</span>' : '';
     const baseline = 'from ' + sourceHTML(previous.value), date = '<time datetime="' + previous.date + '">' + displayDate(previous.date) + '</time>';
-    return '<span class="changeValue">' + change + '</span> ' + (compact ? '<small>since ' + date + '</small><span class="visuallyHidden"> · ' + baseline + '</span>' : '<small>' + baseline + ' · ' + date + '</small>');
+    return '<span class="changeValue">' + change + percentage + '</span> ' + (compact ? '<small>since ' + date + '</small><span class="visuallyHidden"> · ' + baseline + '</span>' : '<small>' + baseline + ' · ' + date + '</small>');
   }
   function historyTable(item) {
     const rows = item.rows.slice().reverse();
