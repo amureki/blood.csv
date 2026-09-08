@@ -1,113 +1,15 @@
 # 🩸 blood.csv
 
-Static, no-dependency viewer for normalized blood lab exports.
+A local CSV viewer for blood test histories. No dependencies or build step.
 
-Personal data is intentionally not tracked. The public page reads local files in your browser only: no upload, no backend, no localStorage/IndexedDB persistence.
+Open `index.html` in a browser, then choose **Import CSV** or **Load demo data**.
+Review trends and past results, or use **CSV table** to browse the records.
 
-## Use it
+Use [examples/blood.csv](examples/blood.csv) as a template. Results needs `date`
+(`YYYY-MM-DD`), `analyte`, `value`, and `unit` columns. The example data is synthetic.
 
-1. Open `index.html` or the hosted static page.
-2. Click **Import CSV** and choose your private CSV, or **Load demo data**.
-3. Use **Results** to scan latest values. Markers appear under lab category headings in a fixed review order. Search by marker, known alternative name, unit, or group name. For example, **GGT** finds Gamma-GT and **cholesterol** also finds LDL, HDL, and Non-HDL. Search does not merge their histories. All groups start visible; there are no selection controls.
-4. Click a marker's **View N results** action to expand its preview into a detailed chart above the complete dated table. Markers without enough numeric data show the table only. The marker name and action share one large tap area. Opening details brings the marker to the top of the viewport, including when switching from another open history. Each history row shows the date, value, and lab, newest first, with no further disclosure level. Tap the chart, or focus it and use Left / Right arrow keys. **Close details** restores the compact preview and returns to that marker.
-5. Use **CSV table** for every source record, with search across visible columns and independent row order. Source filenames and original marker names are omitted from this view. Scroll sideways on a phone; marker names stay visible.
+Files stay in browser memory and clear when you refresh or close the page.
+Keep private reports and CSVs outside the repository or in ignored `data/`.
 
-Close or refresh the tab to clear the loaded data. The viewer does not save data between sessions.
+Chart references use a male 30–40 profile where stated. Your lab's limits may differ.
 
-Results shows a compact trend preview below each marker with at least two exact numeric results and a supplied unit. Tap the marker or preview to open its full history. Only one graph appears per marker: opening details replaces the preview with a full-width chart, adding axes, value labels, reference overlays where available, and point selection. Collapsed previews stay 48 px high on desktop and phones and share the full file date range, including during search. Both chart sizes use the same value scale, including reference limits where available. Value scales vary by marker; a minimum scale margin keeps tiny changes from filling the chart height. Text or qualified values break the line, and same-date duplicates appear as unconnected points.
-
-Recognised markers have a short **About this marker** explanation below the history table. Descriptions explain the measurement without interpreting the imported result. They are bundled with the viewer and link to MedlinePlus or NHS information in a new tab. Unrecognised names keep their full history without a guessed explanation.
-
-The application uses index.html, viewer.js, viewer.css, and tokens.css. There is no build step or external runtime dependency. Keep these files together when copying the viewer.
-
-Use `examples/blood.csv` as both a starter template and synthetic sample. Keep the header, replace/delete sample rows, then import your private copy.
-
-Groups are navigation categories, not diagnoses or a claim that a complete panel was measured. Common categories include [blood count](https://medlineplus.gov/lab-tests/complete-blood-count-cbc/), [lipids](https://medlineplus.gov/lab-tests/cholesterol-levels/), and components of [metabolic panels](https://medlineplus.gov/lab-tests/comprehensive-metabolic-panel-cmp/). Known names match without case sensitivity; unrecognised names remain visible under **Other markers**. Grouping never merges marker names, converts units, or changes source records.
-
-The review order is Lipids → Liver-associated enzymes → Other enzymes → Kidney function → Glucose → Blood count → Electrolytes → Iron stores → Thyroid → Uric acid. Only groups present in the file appear. Body measurements and unrecognised markers follow these groups when present.
-
-Within the first three groups, the order is LDL → Non-HDL → Triglycerides → HDL → Total cholesterol; ALT → AST → Gamma-GT; and CK → LDH. Other markers use alphabetical order within their group. These are fixed display priorities, not calculated clinical rankings.
-
-## CSV schema
-
-The demo and example CSV use these eight columns, in this order:
-
-```csv
-date,source_date,source_file,lab,analyte,original_name,value,unit
-```
-
-- `date`: measurement date in YYYY-MM-DD format; used for history and chart positions.
-- `source_date`: date recorded for the source report; retained separately from the measurement date.
-- `source_file`: source report filename; not displayed in the viewer.
-- `lab`: laboratory name.
-- `analyte`: marker name used to organise its history.
-- `original_name`: marker name as written in the source report; not displayed in the viewer.
-- `value`: original measurement text, including precision or inequalities.
-- `unit`: measurement unit; different units stay in separate histories.
-
-Synthetic example row:
-
-```csv
-2025-01-15,2025-01-15,example-report-2025-01-15.pdf,Example Clinic,LDL,LDL,120,mg/dl
-```
-
-Results requires `date`, `analyte`, `value`, and `unit` columns. The other four fields provide report context and can be blank. Both demo sources contain the same synthetic records and schema.
-
-CSV table omits `source_file` and `original_name`. All other columns retain their cell text, blanks, duplicate records, and file row order. Common columns have readable headings and appear first; unfamiliar columns are also included. Quoted commas, escaped quotes, and multiline cells are supported. Invalid CSV structure reports its line number and leaves the previous file open.
-
-Files without the Results columns can still be opened in CSV table. Rows with an invalid date or missing marker remain in CSV table and are counted in a visible notice. Header-only files are supported.
-
-Results keeps each marker and unit separate. Text, empty, and qualified values such as “<5” remain in the history table; only exact finite numbers are plotted. Same-date results are retained without an arbitrary latest-value choice or ambiguous change calculation. Missing units suppress charts and changes. The viewer displays measurements and numerical changes without status flags or clinical interpretation.
-
-**Since previous test** compares each marker’s latest result with its result on the most recent earlier measurement date, using the same unit. One arrow shows direction, followed by the absolute difference and percentage change, for example **↓ 9 (7.4%)**. The percentage uses the previous result as its baseline and rounds to one decimal place; nonzero changes below 0.1% show **<0.1%**. Zero or negative baselines, or percentages too large to calculate, omit the percentage. Equal values show **No change**. The comparison shows the previous value and date on desktop; on phones, **since** and the previous date appear below the change. If either date has multiple results, either value is not an exact number, or no earlier date exists, it shows the reason instead of a change. It does not skip unavailable comparisons to use an older result. Full history remains available in the details.
-
-Charts show dotted reference limits for recognised marker/unit pairs, using [University Medicine Frankfurt’s 2026 reference tables](https://www.unimedizin-ffm.de/einrichtungen/kliniken/zentrum-der-inneren-medizin/zentrallabor/referenzbereiche) applicable to a **male aged 30–40**. Each overlay states its limits, profile, and source. These are general lab references, not personal treatment targets or a uniform German standard; the reporting lab’s limits may differ. The chart scale includes both measurements and reference limits. Upper-only limits have one dotted line, without an invented lower bound. The same profile applies across the displayed history.
-
-Total cholesterol in mg/dl has a dotted line at 200, labelled **Desirable: < 200 mg/dl · Adults**, from [MedlinePlus](https://medlineplus.gov/cholesterollevelswhatyouneedtoknow.html). This is a general adult threshold, not a personal treatment target or a Frankfurt lab interval.
-
-LDL in mg/dl shows **Low-risk target: < 116 mg/dl**, from [Lipid-Liga](https://www.lipid-liga.de/wenig-cholesterin-im-blut-weniger-herzinfarkte-schlaganfaelle-und-durchblutungsstoerungen/). This comparison does not assign the user a cardiovascular risk category. HDL shows a lower reference boundary of **40 mg/dl for men**, from MedlinePlus; this is not a treatment target. Triglycerides show both **150 mg/dl fasting** and **175 mg/dl non-fasting**, from the [EAS / EFLM consensus](https://esc365.escardio.org/journal/26789), without assuming fasting status for imported records.
-
-No default overlays are assigned to non-HDL, glucose, HbA1c, or eGFR: treatment goals, fasting status, and clinical decision thresholds need separate context. Other unsupported markers or units also have no overlay. Reference unit aliases cover equivalent notations; white-cell and platelet references are scaled for counts per microlitre. Imported values and CSV fields are unchanged.
-
-## Add data manually
-
-Keep your private file outside git or under ignored `data/`:
-
-```sh
-mkdir -p data
-cp examples/blood.csv data/blood.csv
-$EDITOR data/blood.csv
-```
-
-Then import `data/blood.csv` in the web page.
-
-## Add data from reports / OCR
-
-Text PDFs:
-
-```sh
-mkdir -p extracted
-pdftotext -layout /path/to/report.pdf extracted/report.txt
-```
-
-Scanned PDFs/images:
-
-1. Render/export each page to an image into ignored `ocr_pages/`.
-
-   ```sh
-   mkdir -p ocr_pages
-   pdftoppm -png -r 200 /path/to/scanned-report.pdf ocr_pages/report
-   ```
-
-2. Run Apple Vision OCR:
-
-   ```sh
-   mkdir -p ocr
-   swift tools/apple_vision_ocr.swift ocr_pages/page-1.png > ocr/report.vision.txt
-   ```
-
-3. Manually review OCR output against the original report.
-4. Normalize measurements into your private CSV using the schema above.
-5. Import the CSV in the web page.
-
-The `extracted/`, `ocr/`, and `ocr_pages/` folders are temporary audit/work folders. Keep them only while checking the CSV; once rows are verified, the private CSV is enough to use the viewer.

@@ -84,7 +84,7 @@
     hdl: { label: 'Reference', profile: 'Men', sourceName: 'MedlinePlus', url: 'https://medlineplus.gov/cholesterollevelswhatyouneedtoknow.html' },
     triglycerides: { ranges: [{ label: 'Fasting', lower: null, upper: 150 }, { label: 'Non-fasting', lower: null, upper: 175 }], sourceName: 'EAS / EFLM', url: 'https://esc365.escardio.org/journal/26789' }
   };
-  // Lab intervals apply to a male aged 30–40; cholesterol uses an adult decision threshold.
+  // Lab intervals apply to males aged 30–40; cholesterol uses an adult decision threshold.
   // Null means no stated bound.
   // Count-density aliases are equivalent units. Only /µl needs a scaled reference interval.
   const markerReferences = new Map([
