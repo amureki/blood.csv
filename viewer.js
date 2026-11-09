@@ -288,7 +288,6 @@
     const referenceLegend = reference ? '<p class="referenceLegend" id="reference-' + item.id + '">' + rangeLabel + '</p>' : '';
     const referenceSource = reference ? '<p class="referenceSource"><a href="' + esc(reference.url) + '" target="_blank" rel="noopener noreferrer">' + esc(reference.sourceName) + '<span class="visuallyHidden"> (opens in a new tab)</span></a>' + (reference.note ? ' · ' + esc(reference.note) : '') + '</p>' : '';
     const notes = [];
-    if (new Set(item.rows.map(row => row.lab)).size > 1) notes.push('Laboratory changes within this history. Methods and reference intervals may differ.');
     if (item.rows.length > 1) {
       if (!item.unit) notes.push('Unit not supplied; no chart or change is calculated.');
       else if (numericRows.length < 2) notes.push('At least two exact numeric values are needed for a chart.');
@@ -414,7 +413,7 @@
       let previous = null, path = '';
       for (const row of item.rows) {
         if (row.valueNum === null) { previous = null; continue; }
-        path += (previous && previous.lab === row.lab ? 'L' : 'M') + x(row.time) + ',' + y(row.valueNum) + ' ';
+        path += (previous ? 'L' : 'M') + x(row.time) + ',' + y(row.valueNum) + ' ';
         previous = row;
       }
       html += '<path class="chartLine" d="' + path + '"/>';

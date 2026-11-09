@@ -19,5 +19,4 @@ or browser Back returns to the same list position and search.
 
 General reference guidance is separate from the chart and uses a male 30–40
 profile where stated. It is not a report-specific interval or personal target.
-Chart lines break when the recorded laboratory changes.
 
