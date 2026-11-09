@@ -1,7 +1,7 @@
 :root { --page-gutter: 24px; --table-gutter: 8px; }
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
-body { margin: 0; background: var(--paper); color: var(--ink); font: 16px/1.5 var(--font); overflow-wrap: anywhere; }
+body { margin: 0; background: var(--paper); color: var(--ink); font: 16px/1.5 var(--font); overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
 a { color: inherit; text-underline-offset: 3px; }
 button, input, select { font: inherit; color: inherit; }
 button { min-height: 44px; padding: 8px 12px; border: 1px solid var(--rule); border-radius: 0; background: var(--paper); cursor: pointer; }
@@ -48,6 +48,8 @@ strong { font-weight: 600; }
 .resultsTable { table-layout: fixed; }
 .latestColumn { width: 26%; }
 .changeColumn { width: 23%; }
+.markerRow { cursor: pointer; }
+.markerRow:hover, .markerRow:focus-within { background: var(--soft); }
 .markerRow > td { vertical-align: middle; }
 .markerName { display: block; color: var(--ink); font-size: 18px; line-height: 1.3; font-weight: 600; }
 .markerText { min-width: 0; }
@@ -67,7 +69,7 @@ strong { font-weight: 600; }
 .groupRow td { background: var(--soft); }
 .groupRow h3 { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
 .groupRow h3 span { flex-shrink: 0; font-weight: 400; }
-.historyChart { margin-bottom: 16px; }
+.historyChart { margin-bottom: 24px; }
 .historyHeading { margin: 0 0 8px; }
 .historyTable { table-layout: fixed; font-size: 14px; }
 .historyTable th, .historyTable td { padding-inline: 0; }
@@ -81,15 +83,15 @@ strong { font-weight: 600; }
 .chartLine { fill: none; stroke: var(--accent); stroke-width: 1.6; }
 .chartPoint { fill: var(--accent); }
 .chartGrid { stroke: var(--rule); stroke-width: 1; }
-.chartReference { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 2 5; stroke-linecap: round; opacity: .75; }
 .referenceLegend { color: var(--muted); font-size: 14px; }
 .referenceSource { color: var(--muted); font-size: 14px; }
 .referenceSource a { display: inline-flex; align-items: center; min-height: 44px; }
 .chartGuide { stroke: var(--muted); }
 .chartSelected { fill: var(--paper); stroke: var(--accent); stroke-width: 2; }
-.pointReadout { min-height: 20px; font-size: 14px; color: var(--muted); }
-.historyNote { margin-top: 8px; }
-.markerExplanation { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--rule); font-size: 14px; }
+.pointReadout { min-height: 20px; font-size: 14px; color: var(--ink); padding-block: 12px; border-bottom: 1px solid var(--rule); }
+.historyNote { margin: 0 0 16px; }
+.markerExplanation, .generalReference { margin-top: 16px; border-top: 1px solid var(--rule); font-size: 14px; }
+.markerExplanation { padding-top: 16px; }
 .markerExplanation p { max-width: 65ch; }
 .markerExplanation a { display: inline-flex; align-items: center; min-height: 44px; color: var(--accent); font-size: 14px; }
 .scrollTools { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 8px 0; }
@@ -107,37 +109,12 @@ strong { font-weight: 600; }
 .sourceTable .sourceValue { width: 70px; min-width: 70px; max-width: 70px; text-align: right; font-variant-numeric: tabular-nums; }
 .sourceTable .sourceUnit { width: 100px; min-width: 100px; max-width: 100px; }
 .pageFooter { color: var(--muted); font-size: 14px; border-top: 1px solid var(--rule); margin-top: 24px; }
-@media (max-width: 560px) {
-  :root { --page-gutter: 16px; }
-  .latestColumn { width: 42%; }
-  .changeColumn { display: none; }
 
-  .csvScroll { scroll-padding-left: 124px; }
-  .sourceTable .sourceMarker { width: 124px; min-width: 124px; max-width: 124px; }
-  .sourceTable .sourceDate { width: 94px; min-width: 94px; max-width: 94px; }
-}
-@media print {
-  .pageHeader, .viewNav, .toolbar, .scrollTools, .historyAction { display: none; }
-  .csvScroll { overflow: visible; }
-  .sourceTable { width: 100%; table-layout: fixed; font-size: 9px; }
-  .sourceTable th, .sourceTable td { position: static; min-width: 0; max-width: none; width: auto; }
-  tr { break-inside: avoid; }
-}
-
-/* Keep exact data prominent while supporting compact desktop validation. */
-body { font-variant-numeric: tabular-nums; }
-.historyChart { margin-bottom: 24px; }
-.pointReadout { color: var(--ink); padding-block: 12px; border-bottom: 1px solid var(--rule); }
 .historyComparison { margin: 0 0 20px; color: var(--muted); font-size: 14px; }
 .historyComparison .changeValue { display: inline; font-size: 14px; font-weight: 400; }
 .historyComparison small { display: inline; font-size: inherit; }
 summary { cursor: pointer; min-height: 44px; padding-block: 10px; }
-.markerExplanation, .generalReference { margin-top: 16px; border-top: 1px solid var(--rule); font-size: 14px; }
-@media (max-width: 560px) {
-  .latestValue { gap: 4px; }
-  .historyTable { font-size: 16px; }
-  .changeColumn { display: none; }
-}
+
 .showMarkerDetail .pageHeader,
 .showMarkerDetail .pageFooter,
 .showMarkerDetail #importStatus,
@@ -148,7 +125,22 @@ summary { cursor: pointer; min-height: 44px; padding-block: 10px; }
 .markerDetailLatest { margin-bottom: 24px; }
 .markerDetailLatest strong { font-size: 30px; }
 .markerDetailLatest .quiet { display: block; margin-top: 4px; }
+@media (max-width: 560px) {
+  :root { --page-gutter: 16px; }
+  .latestColumn { width: 42%; }
+  .changeColumn { display: none; }
+  .csvScroll { scroll-padding-left: 124px; }
+  .sourceTable .sourceMarker { width: 124px; min-width: 124px; max-width: 124px; }
+  .sourceTable .sourceDate { width: 94px; min-width: 94px; max-width: 94px; }
+  .latestValue { gap: 4px; }
+  .historyTable { font-size: 16px; }
+}
 @media print {
+  .pageHeader, .viewNav, .toolbar, .scrollTools, .historyAction { display: none; }
+  .csvScroll { overflow: visible; }
+  .sourceTable { width: 100%; table-layout: fixed; font-size: 9px; }
+  .sourceTable th, .sourceTable td { position: static; min-width: 0; max-width: none; width: auto; }
+  tr { break-inside: avoid; }
   .markerDetailHeader { position: static; }
   .markerDetailHeader button { display: none; }
 }

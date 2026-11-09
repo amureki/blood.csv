@@ -288,10 +288,10 @@
       else if (numericRows.length !== item.rows.length) notes.push((item.rows.length - numericRows.length) + ' text or qualified values are listed in the table; they are not plotted as exact numbers.');
       if (item.duplicateDates) notes.push('Multiple results on a date are retained. Points are not connected.');
     }
-    return (canPlot ? '<div class="historyChart"><h3>Trend · ' + sourceHTML(item.unit) + '</h3><svg class="chart" data-chart="' + item.id + '" role="img" tabindex="0"' + ' aria-label="' + esc(item.name) + ' history. Tap a point or use Left and Right arrow keys for exact values. Every result is in the table below."></svg><p class="pointReadout" aria-live="polite">Tap a point for its date and value.</p></div>' : '') +
+    return (notes.length ? '<p class="quiet historyNote">' + esc(notes.join(' ')) + '</p>' : '') +
+      (canPlot ? '<div class="historyChart"><h3>Trend · ' + sourceHTML(item.unit) + '</h3><svg class="chart" data-chart="' + item.id + '" role="img" tabindex="0"' + ' aria-label="' + esc(item.name) + ' history. Tap a point or use Left and Right arrow keys for exact values. Every result is in the table below."></svg><p class="pointReadout" aria-live="polite">Tap a point for its date and value.</p></div>' : '') +
       '<div class="historyComparison">Since previous test: ' + changeHTML(item) + '</div>' + historyTable(item) +
       (reference ? '<details class="generalReference"><summary>General reference guidance</summary><p>General guidance, not a reference interval from your report or a personal treatment target.</p>' + referenceLegend + referenceSource + '</details>' : '') +
-      (notes.length ? '<p class="quiet historyNote">' + esc(notes.join(' ')) + '</p>' : '') +
       (explanation ? '<details class="markerExplanation"><summary>About this marker</summary><p>' + esc(explanation.text) + '</p><a href="' + esc(explanation.url) + '" target="_blank" rel="noopener noreferrer">' + (explanation.url.startsWith('https://medlineplus.gov/') ? 'MedlinePlus' : 'NHS') + ' · Learn more<span class="visuallyHidden"> about ' + sourceHTML(item.name) + ' (opens in a new tab)</span></a></details>' : '');
   }
   function renderResults() {
@@ -492,7 +492,9 @@
     tabs[index].focus();
   };
   ui.loaded.addEventListener('click', event => {
-    const button = event.target.closest('button');
+    const directButton = event.target.closest('button');
+    if (!directButton && !window.getSelection().isCollapsed) return;
+    const button = directButton || event.target.closest('.markerRow')?.querySelector('.historyButton');
     if (!button) return;
     if (button.hasAttribute('data-back')) { history.back(); return; }
     if (button.dataset.view) { state.view = button.dataset.view; render(); }
