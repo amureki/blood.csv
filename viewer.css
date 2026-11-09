@@ -49,7 +49,6 @@ strong { font-weight: 600; }
 .latestColumn { width: 26%; }
 .changeColumn { width: 23%; }
 .markerRow > td { vertical-align: middle; }
-.markerRow:has([aria-expanded="true"]) > td { background: var(--soft); border-bottom-color: transparent; }
 .markerName { display: block; color: var(--ink); font-size: 18px; line-height: 1.3; font-weight: 600; }
 .markerText { min-width: 0; }
 .historyButton { display: block; min-height: 48px; width: 100%; margin: 0; padding: 4px 0; border: 0; background: transparent; text-align: left; }
@@ -68,7 +67,6 @@ strong { font-weight: 600; }
 .groupRow td { background: var(--soft); }
 .groupRow h3 { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
 .groupRow h3 span { flex-shrink: 0; font-weight: 400; }
-.expandedCell { padding: 20px var(--table-gutter); background: var(--paper); }
 .historyChart { margin-bottom: 16px; }
 .historyHeading { margin: 0 0 8px; }
 .historyTable { table-layout: fixed; font-size: 14px; }
@@ -77,7 +75,6 @@ strong { font-weight: 600; }
 .historyTable .dateColumn { width: 60%; }
 .historyTable .valueColumn { width: 40%; }
 .sourceText { white-space: pre-wrap; }
-.closeHistory { margin-top: 16px; font-size: 13px; }
 .chart { display: block; width: 100%; height: 240px; touch-action: pan-y; cursor: crosshair; }
 .chart text { fill: var(--muted); font: 14px var(--font); font-variant-numeric: tabular-nums; }
 .chart .valueLabel { fill: var(--ink); paint-order: stroke; stroke: var(--paper); stroke-width: 4px; stroke-linejoin: round; }
@@ -120,7 +117,7 @@ strong { font-weight: 600; }
   .sourceTable .sourceDate { width: 94px; min-width: 94px; max-width: 94px; }
 }
 @media print {
-  .pageHeader, .viewNav, .toolbar, .scrollTools, .historyAction, .closeHistory { display: none; }
+  .pageHeader, .viewNav, .toolbar, .scrollTools, .historyAction { display: none; }
   .csvScroll { overflow: visible; }
   .sourceTable { width: 100%; table-layout: fixed; font-size: 9px; }
   .sourceTable th, .sourceTable td { position: static; min-width: 0; max-width: none; width: auto; }
@@ -129,7 +126,6 @@ strong { font-weight: 600; }
 
 /* Keep exact data prominent while supporting compact desktop validation. */
 body { font-variant-numeric: tabular-nums; }
-.markerRow:has([aria-expanded="true"]) .latestValue strong { font-size: 30px; }
 .historyChart { margin-bottom: 24px; }
 .pointReadout { color: var(--ink); padding-block: 12px; border-bottom: 1px solid var(--rule); }
 .historyComparison { margin: 0 0 20px; color: var(--muted); font-size: 14px; }
@@ -141,4 +137,18 @@ summary { cursor: pointer; min-height: 44px; padding-block: 10px; }
   .latestValue { gap: 4px; }
   .historyTable { font-size: 16px; }
   .changeColumn { display: none; }
+}
+.showMarkerDetail .pageHeader,
+.showMarkerDetail .pageFooter,
+.showMarkerDetail #importStatus,
+.showMarkerDetail #loaded > :not(#markerDetail) { display: none; }
+.showMarkerDetail .workspace { padding-top: 0; }
+.markerDetailHeader { position: sticky; top: 0; z-index: 2; background: var(--paper); padding: 12px 0; border-bottom: 1px solid var(--rule); margin-bottom: 20px; }
+.markerDetailHeader h1 { margin: 12px 0 0; font-size: 22px; }
+.markerDetailLatest { margin-bottom: 24px; }
+.markerDetailLatest strong { font-size: 30px; }
+.markerDetailLatest .quiet { display: block; margin-top: 4px; }
+@media print {
+  .markerDetailHeader { position: static; }
+  .markerDetailHeader button { display: none; }
 }

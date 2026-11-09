@@ -14,6 +14,9 @@ Keep private reports and CSVs outside the repository or in ignored `data/`.
 Open one marker to see its full trend and exact measurements. Use **CSV table**
 to inspect the original CSV fields.
 
+Markers open in a separate detail view on phones and desktop. **Back to markers**
+or browser Back returns to the same list position and search.
+
 General reference guidance is separate from the chart and uses a male 30–40
 profile where stated. It is not a report-specific interval or personal target.
 Chart lines break when the recorded laboratory changes.

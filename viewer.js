@@ -130,8 +130,10 @@
   const numberFormat = new Intl.NumberFormat(navigator.languages, { maximumSignificantDigits: 6 });
   const percentFormat = new Intl.NumberFormat(navigator.languages, { style: 'percent', maximumFractionDigits: 1 });
   const mobile = matchMedia('(max-width:560px)');
-  const state = { view: 'results', query: '', csvQuery: '', csvOrder: 'source', expanded: null };
+  const state = { view: 'results', query: '', csvQuery: '', csvOrder: 'source', selectedMarker: null };
   let source = { header: [], names: [], records: [] }, series = [], dates = [], importVersion = 0;
+  let navigationKey = '', listScroll = 0;
+  history.scrollRestoration = 'manual';
   const selectedPoints = new Map();
   const chartObserver = new ResizeObserver(entries => entries.forEach(entry => drawChart(entry.target)));
 
@@ -222,9 +224,11 @@
       return { ...item, mixedUnits: units.get(item.name).size > 1, duplicateDates: [...counts.values()].some(count => count > 1) };
     });
     source = parsed; series = prepared;
+    navigationKey = Date.now() + ':' + importVersion;
+    history.replaceState(null, '');
     dates = [...new Set(series.flatMap(item => item.rows.map(row => row.date)))].sort();
     selectedPoints.clear();
-    Object.assign(state, { view: series.length ? 'results' : 'csv', query: '', csvQuery: '', csvOrder: 'source', expanded: null });
+    Object.assign(state, { view: series.length ? 'results' : 'csv', query: '', csvQuery: '', csvOrder: 'source', selectedMarker: null });
     ui.search.value = ''; ui.csvSearch.value = ''; ui.csvOrder.value = 'source';
     ui.welcome.hidden = true; ui.loaded.hidden = false;
     ui.importStatus.className = 'fileStatus';
@@ -288,8 +292,7 @@
       '<div class="historyComparison">Since previous test: ' + changeHTML(item) + '</div>' + historyTable(item) +
       (reference ? '<details class="generalReference"><summary>General reference guidance</summary><p>General guidance, not a reference interval from your report or a personal treatment target.</p>' + referenceLegend + referenceSource + '</details>' : '') +
       (notes.length ? '<p class="quiet historyNote">' + esc(notes.join(' ')) + '</p>' : '') +
-      (explanation ? '<details class="markerExplanation"><summary>About this marker</summary><p>' + esc(explanation.text) + '</p><a href="' + esc(explanation.url) + '" target="_blank" rel="noopener noreferrer">' + (explanation.url.startsWith('https://medlineplus.gov/') ? 'MedlinePlus' : 'NHS') + ' · Learn more<span class="visuallyHidden"> about ' + sourceHTML(item.name) + ' (opens in a new tab)</span></a></details>' : '') +
-      '<button type="button" class="closeHistory" data-close="' + item.id + '">Close details<span class="visuallyHidden"> for ' + sourceHTML(item.name) + '</span></button>';
+      (explanation ? '<details class="markerExplanation"><summary>About this marker</summary><p>' + esc(explanation.text) + '</p><a href="' + esc(explanation.url) + '" target="_blank" rel="noopener noreferrer">' + (explanation.url.startsWith('https://medlineplus.gov/') ? 'MedlinePlus' : 'NHS') + ' · Learn more<span class="visuallyHidden"> about ' + sourceHTML(item.name) + ' (opens in a new tab)</span></a></details>' : '');
   }
   function renderResults() {
     const query = state.query.trim().toLowerCase(), columns = mobile.matches ? 2 : 3;
@@ -300,18 +303,23 @@
     let previousGroup = '';
     ui.resultsBody.innerHTML = visible.map(item => {
       const last = item.rows.at(-1), latest = item.rows.filter(row => row.date === last.date);
-      const opened = state.expanded === item.id;
-      const action = opened ? 'Hide details' : 'View ' + resultCount(item.rows.length);
-      const preview = !opened && item.unit && item.rows.filter(row => row.valueNum !== null).length > 1 ? '<svg class="trendPreview" data-chart="' + item.id + '" aria-hidden="true" focusable="false"></svg>' : '';
+      const action = 'View ' + resultCount(item.rows.length);
+      const preview = item.unit && item.rows.filter(row => row.valueNum !== null).length > 1 ? '<svg class="trendPreview" data-chart="' + item.id + '" aria-hidden="true" focusable="false"></svg>' : '';
       const change = changeHTML(item);
       const composition = ['total cholesterol', 'cholesterol'].includes(item.name.toLowerCase()) ? ' (HDL + non-HDL)' : '';
       const heading = previousGroup !== item.group ? '<tr class="groupRow"><td colspan="' + columns + '"><h3>' + esc(item.group) + '<span class="quiet">' + counts.get(item.group) + (counts.get(item.group) === 1 ? ' marker' : ' markers') + '</span></h3></td></tr>' : '';
       previousGroup = item.group;
-      return heading + '<tr class="markerRow"><td><button type="button" class="historyButton" data-expand="' + item.id + '" aria-label="' + action + ' for ' + esc(item.name + composition + ' (' + (item.unit || 'no unit') + ')') + '" aria-expanded="' + opened + '" aria-controls="history-' + item.id + '"><span class="markerText"><span class="markerName" translate="no">' + esc(item.name) + '</span>' + (composition ? '<span class="markerNote" translate="no">' + composition + '</span>' : '') + (item.mixedUnits ? '<span class="markerNote">Separate unit</span>' : '') + '</span>' + preview + '<span class="historyAction">' + action + '</span></button></td>' +
+      return heading + '<tr class="markerRow"><td><button type="button" class="historyButton" data-marker="' + item.id + '" aria-label="' + action + ' for ' + esc(item.name + composition + ' (' + (item.unit || 'no unit') + ')') + '" aria-controls="markerDetail"><span class="markerText"><span class="markerName" translate="no">' + esc(item.name) + '</span>' + (composition ? '<span class="markerNote" translate="no">' + composition + '</span>' : '') + (item.mixedUnits ? '<span class="markerNote">Separate unit</span>' : '') + '</span>' + preview + '<span class="historyAction">' + action + '</span></button></td>' +
         '<td class="numeric"><span class="latestValue"><strong class="sourceText">' + latest.map(row => row.value === '' ? '<span aria-label="Empty value">—</span>' : sourceHTML(row.value)).join('<br>') + '</strong><span class="unit">' + (item.unit ? sourceHTML(item.unit) : 'Unit not supplied') + '</span></span><small>' + displayDate(last.date) + '</small>' + (latest.length > 1 ? '<small>' + latest.length + ' results on this date</small>' : '') + '</td>' +
-        '<td class="numeric changeColumn">' + change + '</td></tr>' +
-        '<tr id="history-' + item.id + '"' + (opened ? '' : ' hidden') + '><td class="expandedCell" colspan="' + columns + '">' + (opened ? historyPanel(item) : '') + '</td></tr>';
+        '<td class="numeric changeColumn">' + change + '</td></tr>';
     }).join('') || '<tr><td colspan="' + columns + '">' + (!series.length ? 'No usable marker histories. Open CSV table to see the source records.' : 'No matching markers. Change or clear the search.') + '</td></tr>';
+  }
+  function renderMarkerDetail() {
+    const item = state.view === 'results' ? series[state.selectedMarker] : null;
+    document.body.classList.toggle('showMarkerDetail', !!item);
+    ui.markerDetail.hidden = !item;
+    const latest = item?.rows.filter(row => row.date === item.rows.at(-1).date);
+    ui.markerDetail.innerHTML = item ? '<header class="markerDetailHeader"><button type="button" data-back>← Back to markers</button><h1 id="markerDetailTitle" tabindex="-1">' + sourceHTML(item.name) + '</h1></header><div class="markerDetailLatest">' + latest.map(row => '<p><strong>' + sourceHTML(row.value || '—') + '</strong> ' + sourceHTML(item.unit || 'Unit not supplied') + '<span class="quiet">' + displayDate(row.date) + ' · ' + sourceHTML(row.lab || 'Lab not supplied') + '</span></p>').join('') + '</div>' + historyPanel(item) : '';
   }
   function renderCSV() {
     ui.csvScroll.classList.toggle('withoutMarker', !source.names.includes('analyte'));
@@ -345,6 +353,12 @@
     ui.scrollRight.disabled = ui.csvScroll.scrollLeft >= maximum - 1;
   }
   function render() {
+    const detail = state.view === 'results' && state.selectedMarker !== null;
+    const enteringDetail = detail && ui.markerDetail.hidden;
+    if (detail && (history.state?.navigationKey !== navigationKey || history.state.marker !== state.selectedMarker)) {
+      listScroll = window.scrollY;
+      history.pushState({ marker: state.selectedMarker, navigationKey, listScroll }, '');
+    }
     ui.resultsView.hidden = state.view !== 'results';
     ui.csvView.hidden = state.view !== 'csv';
     document.querySelectorAll('[data-view]').forEach(button => {
@@ -353,12 +367,17 @@
       button.tabIndex = selected ? 0 : -1;
     });
     if (state.view === 'results') renderResults(); else renderCSV();
+    renderMarkerDetail();
     refreshCharts();
+    if (enteringDetail) {
+      window.scrollTo(0, 0);
+      document.getElementById('markerDetailTitle').focus({ preventScroll: true });
+    }
   }
   function refreshCharts() {
     chartObserver.disconnect();
     if (state.view !== 'results') return;
-    ui.resultsBody.querySelectorAll('[data-chart]').forEach(svg => { drawChart(svg); chartObserver.observe(svg); });
+    (ui.markerDetail.hidden ? ui.resultsBody : ui.markerDetail).querySelectorAll('[data-chart]').forEach(svg => { drawChart(svg); chartObserver.observe(svg); });
   }
   function drawChart(svg) {
     const item = series[Number(svg.dataset.chart)], width = svg.getBoundingClientRect().width;
@@ -475,14 +494,11 @@
   ui.loaded.addEventListener('click', event => {
     const button = event.target.closest('button');
     if (!button) return;
+    if (button.hasAttribute('data-back')) { history.back(); return; }
     if (button.dataset.view) { state.view = button.dataset.view; render(); }
-    if (button.dataset.expand !== undefined || button.dataset.close !== undefined) {
-      const id = Number(button.dataset.expand ?? button.dataset.close);
-      state.expanded = state.expanded === id ? null : id;
-      renderResults(); refreshCharts();
-      const opener = ui.resultsBody.querySelector('[data-expand="' + id + '"]');
-      opener.focus({ preventScroll: true });
-      opener.closest('.markerRow').scrollIntoView({ block: state.expanded === id ? 'start' : 'nearest' });
+    if (button.dataset.marker !== undefined) {
+      state.selectedMarker = Number(button.dataset.marker);
+      render();
     }
   });
   ui.search.oninput = event => { state.query = event.target.value; renderResults(); refreshCharts(); };
@@ -500,7 +516,25 @@
   }
   ui.csvScroll.addEventListener('scroll', updateScrollControls, { passive: true });
   new ResizeObserver(updateScrollControls).observe(ui.csvScroll);
+  window.addEventListener('popstate', event => {
+    if (!navigationKey) return;
+    const previous = state.selectedMarker;
+    const entry = event.state;
+    state.selectedMarker = entry?.navigationKey === navigationKey && series[entry.marker] ? entry.marker : null;
+    if (state.selectedMarker !== null) {
+      state.view = 'results';
+      listScroll = entry.listScroll;
+    }
+    render();
+    if (state.selectedMarker !== null) {
+      window.scrollTo(0, 0);
+      document.getElementById('markerDetailTitle').focus({ preventScroll: true });
+    } else if (previous !== null) {
+      ui.resultsBody.querySelector('[data-marker="' + previous + '"]')?.focus({ preventScroll: true });
+      window.scrollTo(0, listScroll);
+    }
+  });
   mobile.addEventListener('change', () => {
-    ui.resultsBody.querySelectorAll(':scope > tr > td[colspan]').forEach(cell => { cell.colSpan = mobile.matches ? 2 : 3; });
+    ui.resultsBody.querySelectorAll('td[colspan]').forEach(cell => { cell.colSpan = mobile.matches ? 2 : 3; });
   });
 })();
