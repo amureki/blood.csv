@@ -74,6 +74,10 @@
     [['Height'], 'Your measured height. Together with weight, it is used to calculate body mass index (BMI).', 'https://medlineplus.gov/ency/article/007196.htm'],
     [['BMI'], 'Body mass index: weight in kilograms divided by height in metres squared. It does not distinguish muscle from body fat.', 'https://medlineplus.gov/ency/article/007196.htm']
   ].flatMap(([names, text, url]) => names.map(name => [name.toLowerCase(), { aliases: names, text, url }])));
+  const markerAliases = new Map([
+    ...[...markerExplanations.values()].map(({ aliases }) => aliases),
+    ['Lipoprotein(a)', 'Lp(a)', 'Lpa']
+  ].flatMap(names => names.map(name => [searchKey(name), names])));
   const labReference = { label: 'Reference', profile: 'Male, 30–40', sourceName: 'Frankfurt lab ranges', note: 'Your lab’s limits may differ.' };
   const referenceSources = {
     chemistry: { ...labReference, url: 'https://www.unimedizin-ffm.de/fileadmin/redakteure/Fachkliniken/Innere-Medizin/Zentrallabor/Referenzbereiche_NEU/IB-AL2-003_V3_Referenzbereiche_Klinische_Chemie.pdf' },
@@ -139,6 +143,9 @@
 
   function esc(value) {
     return String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+  function searchKey(value) {
+    return value.toLowerCase().replace(/[\s()-]/g, '');
   }
   function sourceHTML(value) {
     return '<span translate="no">' + esc(value) + '</span>';
@@ -218,7 +225,7 @@
     const prepared = [...nextSeries.values()].map(item => {
       item.rows.sort((a, b) => a.time - b.time || a.index - b.index);
       item.reference = markerReferences.get(JSON.stringify([item.name.toLowerCase(), item.unit.toLowerCase().replaceAll('μ', 'µ')]));
-      item.searchText = [item.name, item.unit, item.group, ...(markerExplanations.get(item.name.toLowerCase())?.aliases ?? [])].join(' ').toLowerCase();
+      item.searchText = searchKey([item.name, item.unit, item.group, ...(markerAliases.get(searchKey(item.name)) ?? [])].join(' '));
       const counts = new Map();
       for (const row of item.rows) counts.set(row.date, (counts.get(row.date) || 0) + 1);
       return { ...item, mixedUnits: units.get(item.name).size > 1, duplicateDates: [...counts.values()].some(count => count > 1) };
@@ -295,7 +302,7 @@
       (explanation ? '<details class="markerExplanation"><summary>About this marker</summary><p>' + esc(explanation.text) + '</p><a href="' + esc(explanation.url) + '" target="_blank" rel="noopener noreferrer">' + (explanation.url.startsWith('https://medlineplus.gov/') ? 'MedlinePlus' : 'NHS') + ' · Learn more<span class="visuallyHidden"> about ' + sourceHTML(item.name) + ' (opens in a new tab)</span></a></details>' : '');
   }
   function renderResults() {
-    const query = state.query.trim().toLowerCase(), columns = mobile.matches ? 2 : 3;
+    const query = searchKey(state.query), columns = mobile.matches ? 2 : 3;
     const visible = series.filter(item => item.searchText.includes(query)).sort((a, b) => groupOrder.get(a.group) - groupOrder.get(b.group) || (markerOrder.get(a.name.toLowerCase()) ?? 0) - (markerOrder.get(b.name.toLowerCase()) ?? 0) || a.name.localeCompare(b.name) || a.unit.localeCompare(b.unit));
     const counts = new Map();
     for (const item of visible) counts.set(item.group, (counts.get(item.group) || 0) + 1);
