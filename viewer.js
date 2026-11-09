@@ -3,7 +3,7 @@
 (() => {
   const ui = Object.fromEntries([...document.querySelectorAll('[id]')].map(element => [element.id, element]));
   const groups = {
-    Lipids: ['LDL', 'LDL cholesterol', 'Non-HDL', 'Non-HDL cholesterol', 'Triglycerides', 'HDL', 'HDL cholesterol', 'Total cholesterol', 'Cholesterol'],
+    Lipids: ['LDL', 'LDL cholesterol', 'Non-HDL', 'Non-HDL cholesterol', 'Triglycerides', 'HDL', 'HDL cholesterol', 'Total cholesterol', 'Cholesterol', 'Lipoprotein(a)', 'Lp(a)'],
     'Liver-associated enzymes': ['ALT', 'AST', 'Gamma-GT', 'GGT', 'ALP', 'Alkaline phosphatase'],
     'Other enzymes': ['Creatine kinase (CK)', 'Creatine kinase', 'CK', 'LDH', 'Lactate dehydrogenase'],
     'Kidney function': ['Creatinine', 'eGFR', 'Urea', 'Blood urea nitrogen', 'BUN'],
@@ -81,6 +81,7 @@
     hormones: { ...labReference, url: 'https://www.unimedizin-ffm.de/fileadmin/redakteure/Fachkliniken/Innere-Medizin/Zentrallabor/Referenzbereiche_NEU/IB-AL2-004_V3_Referenzbereiche_Hormone.pdf' },
     cholesterol: { label: 'Desirable', profile: 'Adults', sourceName: 'MedlinePlus', url: 'https://medlineplus.gov/cholesterollevelswhatyouneedtoknow.html' },
     ldl: { label: 'Low-risk target', sourceName: 'Lipid-Liga', url: 'https://www.lipid-liga.de/wenig-cholesterin-im-blut-weniger-herzinfarkte-schlaganfaelle-und-durchblutungsstoerungen/' },
+    lpa: { label: 'Low-risk threshold', sourceName: 'EAS consensus', url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC9639807/', note: '75–125 nmol/L is an intermediate range; cardiovascular risk increases continuously.' },
     hdl: { label: 'Reference', profile: 'Men', sourceName: 'MedlinePlus', url: 'https://medlineplus.gov/cholesterollevelswhatyouneedtoknow.html' },
     triglycerides: { ranges: [{ label: 'Fasting', lower: null, upper: 150 }, { label: 'Non-fasting', lower: null, upper: 175 }], sourceName: 'EAS / EFLM', url: 'https://esc365.escardio.org/journal/26789' }
   };
@@ -92,6 +93,7 @@
     [['LDL', 'LDL cholesterol'], ['mg/dl'], null, 116, 'ldl'],
     [['HDL', 'HDL cholesterol'], ['mg/dl'], 40, null, 'hdl'],
     [['Triglycerides'], ['mg/dl'], null, null, 'triglycerides'],
+    [['Lipoprotein(a)', 'Lp(a)'], ['nmol/l'], null, 75, 'lpa'],
     [['ALT'], ['u/l'], null, 50, 'chemistry', 5],
     [['AST'], ['u/l'], null, 40, 'chemistry', 5],
     [['Gamma-GT', 'GGT'], ['u/l'], null, 60, 'chemistry', 5],
@@ -272,6 +274,8 @@
       const value = range.lower === null ? '< ' + numberFormat.format(range.upper) : range.upper === null ? '≥ ' + numberFormat.format(range.lower) : numberFormat.format(range.lower) + '–' + numberFormat.format(range.upper);
       return esc(range.label || reference.label) + ': ' + sourceHTML(value + ' ' + item.unit);
     }).join(' · ') + (reference.profile ? ' · ' + esc(reference.profile) : '') : '';
+    const referenceLegend = reference ? '<p class="referenceLegend" id="reference-' + item.id + '">' + rangeLabel + '</p>' : '';
+    const referenceSource = reference ? '<p class="referenceSource"><a href="' + esc(reference.url) + '" target="_blank" rel="noopener noreferrer">' + esc(reference.sourceName) + '<span class="visuallyHidden"> (opens in a new tab)</span></a>' + (reference.note ? ' · ' + esc(reference.note) : '') + '</p>' : '';
     const notes = [];
     if (item.rows.length > 1) {
       if (!item.unit) notes.push('Unit not supplied; no chart or change is calculated.');
@@ -279,7 +283,7 @@
       else if (numericRows.length !== item.rows.length) notes.push((item.rows.length - numericRows.length) + ' text or qualified values are listed in the table; they are not plotted as exact numbers.');
       if (item.duplicateDates) notes.push('Multiple results on a date are retained. Points are not connected.');
     }
-    return (canPlot ? '<div class="historyChart"><h3>Trend · ' + sourceHTML(item.unit) + '</h3>' + (reference ? '<p class="referenceLegend" id="reference-' + item.id + '">' + rangeLabel + '</p>' : '') + '<svg class="chart" data-chart="' + item.id + '" role="img" tabindex="0"' + (reference ? ' aria-describedby="reference-' + item.id + '"' : '') + ' aria-label="' + esc(item.name) + ' history. Tap a point or use Left and Right arrow keys for exact values. Every result is in the table below."></svg><p class="pointReadout" aria-live="polite">Tap a point for its date and value.</p>' + (reference ? '<p class="referenceSource"><a href="' + esc(reference.url) + '" target="_blank" rel="noopener noreferrer">' + esc(reference.sourceName) + '<span class="visuallyHidden"> (opens in a new tab)</span></a>' + (reference.note ? ' · ' + esc(reference.note) : '') + '</p>' : '') + '</div>' : '') +
+    return (canPlot ? '<div class="historyChart"><h3>Trend · ' + sourceHTML(item.unit) + '</h3>' + referenceLegend + '<svg class="chart" data-chart="' + item.id + '" role="img" tabindex="0"' + (reference ? ' aria-describedby="reference-' + item.id + '"' : '') + ' aria-label="' + esc(item.name) + ' history. Tap a point or use Left and Right arrow keys for exact values. Every result is in the table below."></svg><p class="pointReadout" aria-live="polite">Tap a point for its date and value.</p>' + referenceSource + '</div>' : referenceLegend + referenceSource) +
       historyTable(item) +
       (notes.length ? '<p class="quiet historyNote">' + esc(notes.join(' ')) + '</p>' : '') +
       (explanation ? '<section class="markerExplanation" aria-labelledby="about-' + item.id + '"><h3 id="about-' + item.id + '">About this marker</h3><p>' + esc(explanation.text) + '</p><a href="' + esc(explanation.url) + '" target="_blank" rel="noopener noreferrer">' + (explanation.url.startsWith('https://medlineplus.gov/') ? 'MedlinePlus' : 'NHS') + ' · Learn more<span class="visuallyHidden"> about ' + sourceHTML(item.name) + ' (opens in a new tab)</span></a></section>' : '') +
