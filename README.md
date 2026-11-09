@@ -11,5 +11,10 @@ Use [examples/blood.csv](examples/blood.csv) as a template. Results needs `date`
 Files stay in browser memory and clear when you refresh or close the page.
 Keep private reports and CSVs outside the repository or in ignored `data/`.
 
-Chart references use a male 30–40 profile where stated. Your lab's limits may differ.
+Open one marker to see its full trend and exact measurements. Use **CSV table**
+to inspect the original CSV fields.
+
+General reference guidance is separate from the chart and uses a male 30–40
+profile where stated. It is not a report-specific interval or personal target.
+Chart lines break when the recorded laboratory changes.
 

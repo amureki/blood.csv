@@ -243,7 +243,7 @@
     render();
     ui.viewTabs.querySelector('[aria-selected="true"]').focus();
   }
-  function changeHTML(item, compact = false) {
+  function changeHTML(item) {
     const last = item.rows.at(-1);
     const previous = item.rows.findLast(row => row.date < last.date);
     let reason = '';
@@ -257,7 +257,7 @@
     const ratio = previous.valueNum > 0 ? Math.abs(delta / previous.valueNum) : null;
     const percentage = delta !== 0 && ratio !== null && Number.isFinite(ratio * 100) ? ' <span class="changePercent">(' + esc(ratio < .001 ? '<' + percentFormat.format(.001) : percentFormat.format(ratio)) + ')</span><span class="visuallyHidden"> of the previous result</span>' : '';
     const baseline = 'from ' + sourceHTML(previous.value), date = '<time datetime="' + previous.date + '">' + displayDate(previous.date) + '</time>';
-    return '<span class="changeValue">' + change + percentage + '</span> ' + (compact ? '<small>since ' + date + '</small><span class="visuallyHidden"> · ' + baseline + '</span>' : '<small>' + baseline + ' · ' + date + '</small>');
+    return '<span class="changeValue">' + change + percentage + '</span> ' + ('<small>' + baseline + ' · ' + date + '</small>');
   }
   function historyTable(item) {
     const rows = item.rows.slice().reverse();
@@ -277,16 +277,18 @@
     const referenceLegend = reference ? '<p class="referenceLegend" id="reference-' + item.id + '">' + rangeLabel + '</p>' : '';
     const referenceSource = reference ? '<p class="referenceSource"><a href="' + esc(reference.url) + '" target="_blank" rel="noopener noreferrer">' + esc(reference.sourceName) + '<span class="visuallyHidden"> (opens in a new tab)</span></a>' + (reference.note ? ' · ' + esc(reference.note) : '') + '</p>' : '';
     const notes = [];
+    if (new Set(item.rows.map(row => row.lab)).size > 1) notes.push('Laboratory changes within this history. Methods and reference intervals may differ.');
     if (item.rows.length > 1) {
       if (!item.unit) notes.push('Unit not supplied; no chart or change is calculated.');
       else if (numericRows.length < 2) notes.push('At least two exact numeric values are needed for a chart.');
       else if (numericRows.length !== item.rows.length) notes.push((item.rows.length - numericRows.length) + ' text or qualified values are listed in the table; they are not plotted as exact numbers.');
       if (item.duplicateDates) notes.push('Multiple results on a date are retained. Points are not connected.');
     }
-    return (canPlot ? '<div class="historyChart"><h3>Trend · ' + sourceHTML(item.unit) + '</h3>' + referenceLegend + '<svg class="chart" data-chart="' + item.id + '" role="img" tabindex="0"' + (reference ? ' aria-describedby="reference-' + item.id + '"' : '') + ' aria-label="' + esc(item.name) + ' history. Tap a point or use Left and Right arrow keys for exact values. Every result is in the table below."></svg><p class="pointReadout" aria-live="polite">Tap a point for its date and value.</p>' + referenceSource + '</div>' : referenceLegend + referenceSource) +
-      historyTable(item) +
+    return (canPlot ? '<div class="historyChart"><h3>Trend · ' + sourceHTML(item.unit) + '</h3><svg class="chart" data-chart="' + item.id + '" role="img" tabindex="0"' + ' aria-label="' + esc(item.name) + ' history. Tap a point or use Left and Right arrow keys for exact values. Every result is in the table below."></svg><p class="pointReadout" aria-live="polite">Tap a point for its date and value.</p></div>' : '') +
+      '<div class="historyComparison">Since previous test: ' + changeHTML(item) + '</div>' + historyTable(item) +
+      (reference ? '<details class="generalReference"><summary>General reference guidance</summary><p>General guidance, not a reference interval from your report or a personal treatment target.</p>' + referenceLegend + referenceSource + '</details>' : '') +
       (notes.length ? '<p class="quiet historyNote">' + esc(notes.join(' ')) + '</p>' : '') +
-      (explanation ? '<section class="markerExplanation" aria-labelledby="about-' + item.id + '"><h3 id="about-' + item.id + '">About this marker</h3><p>' + esc(explanation.text) + '</p><a href="' + esc(explanation.url) + '" target="_blank" rel="noopener noreferrer">' + (explanation.url.startsWith('https://medlineplus.gov/') ? 'MedlinePlus' : 'NHS') + ' · Learn more<span class="visuallyHidden"> about ' + sourceHTML(item.name) + ' (opens in a new tab)</span></a></section>' : '') +
+      (explanation ? '<details class="markerExplanation"><summary>About this marker</summary><p>' + esc(explanation.text) + '</p><a href="' + esc(explanation.url) + '" target="_blank" rel="noopener noreferrer">' + (explanation.url.startsWith('https://medlineplus.gov/') ? 'MedlinePlus' : 'NHS') + ' · Learn more<span class="visuallyHidden"> about ' + sourceHTML(item.name) + ' (opens in a new tab)</span></a></details>' : '') +
       '<button type="button" class="closeHistory" data-close="' + item.id + '">Close details<span class="visuallyHidden"> for ' + sourceHTML(item.name) + '</span></button>';
   }
   function renderResults() {
@@ -306,7 +308,7 @@
       const heading = previousGroup !== item.group ? '<tr class="groupRow"><td colspan="' + columns + '"><h3>' + esc(item.group) + '<span class="quiet">' + counts.get(item.group) + (counts.get(item.group) === 1 ? ' marker' : ' markers') + '</span></h3></td></tr>' : '';
       previousGroup = item.group;
       return heading + '<tr class="markerRow"><td><button type="button" class="historyButton" data-expand="' + item.id + '" aria-label="' + action + ' for ' + esc(item.name + composition + ' (' + (item.unit || 'no unit') + ')') + '" aria-expanded="' + opened + '" aria-controls="history-' + item.id + '"><span class="markerText"><span class="markerName" translate="no">' + esc(item.name) + '</span>' + (composition ? '<span class="markerNote" translate="no">' + composition + '</span>' : '') + (item.mixedUnits ? '<span class="markerNote">Separate unit</span>' : '') + '</span>' + preview + '<span class="historyAction">' + action + '</span></button></td>' +
-        '<td class="numeric"><span class="latestValue"><strong class="sourceText">' + latest.map(row => row.value === '' ? '<span aria-label="Empty value">—</span>' : sourceHTML(row.value)).join('<br>') + '</strong><span class="unit">' + (item.unit ? sourceHTML(item.unit) : 'Unit not supplied') + '</span></span><small>' + displayDate(last.date) + '</small>' + (latest.length > 1 ? '<small>' + latest.length + ' results on this date</small>' : '') + '<div class="mobileChange">' + changeHTML(item, true) + '</div></td>' +
+        '<td class="numeric"><span class="latestValue"><strong class="sourceText">' + latest.map(row => row.value === '' ? '<span aria-label="Empty value">—</span>' : sourceHTML(row.value)).join('<br>') + '</strong><span class="unit">' + (item.unit ? sourceHTML(item.unit) : 'Unit not supplied') + '</span></span><small>' + displayDate(last.date) + '</small>' + (latest.length > 1 ? '<small>' + latest.length + ' results on this date</small>' : '') + '</td>' +
         '<td class="numeric changeColumn">' + change + '</td></tr>' +
         '<tr id="history-' + item.id + '"' + (opened ? '' : ' hidden') + '><td class="expandedCell" colspan="' + columns + '">' + (opened ? historyPanel(item) : '') + '</td></tr>';
     }).join('') || '<tr><td colspan="' + columns + '">' + (!series.length ? 'No usable marker histories. Open CSV table to see the source records.' : 'No matching markers. Change or clear the search.') + '</td></tr>';
@@ -314,8 +316,8 @@
   function renderCSV() {
     ui.csvScroll.classList.toggle('withoutMarker', !source.names.includes('analyte'));
     const priority = ['date', 'analyte', 'value', 'unit', 'lab'];
-    const fields = source.header.map((name, index) => ({ name, key: source.names[index], index })).filter(field => !['source_file', 'original_name'].includes(field.key)).sort((a, b) => (priority.includes(a.key) ? priority.indexOf(a.key) : priority.length) - (priority.includes(b.key) ? priority.indexOf(b.key) : priority.length) || a.index - b.index);
-    const labels = { date: 'Date', analyte: 'Marker', value: 'Value', unit: 'Unit', lab: 'Lab', source_date: 'Source date' };
+    const fields = source.header.map((name, index) => ({ name, key: source.names[index], index })).sort((a, b) => (priority.includes(a.key) ? priority.indexOf(a.key) : priority.length) - (priority.includes(b.key) ? priority.indexOf(b.key) : priority.length) || a.index - b.index);
+    const labels = { date: 'Date', analyte: 'Marker', value: 'Value', unit: 'Unit', lab: 'Lab', source_date: 'Source date', source_file: 'Source file', original_name: 'Original marker name' };
     const classes = { date: 'sourceDate', analyte: 'sourceMarker', value: 'sourceValue', unit: 'sourceUnit' };
     fields.forEach(field => { field.className = (Object.hasOwn(classes, field.key) ? classes[field.key] : '') + (field.key === 'analyte' && field.index === source.names.indexOf('analyte') ? ' frozenMarker' : ''); });
     const query = state.csvQuery.trim().toLowerCase();
@@ -364,11 +366,10 @@
     const rows = item.rows.filter(row => row.valueNum !== null);
     if (!rows.length) return;
     const preview = svg.classList.contains('trendPreview');
-    const height = preview ? 48 : 180, right = preview ? 4 : 24, top = preview ? 4 : 26, bottom = preview ? 44 : 140;
+    const height = preview ? 48 : 240, right = preview ? 4 : 24, top = preview ? 4 : 26, bottom = preview ? 44 : 196;
     let minimum = Infinity, maximum = -Infinity;
     for (const row of rows) { minimum = Math.min(minimum, row.valueNum); maximum = Math.max(maximum, row.valueNum); }
-    const bounds = item.reference ? item.reference.ranges.flatMap(range => [range.lower, range.upper]).filter(value => value !== null) : [];
-    const domainMin = Math.min(minimum, ...bounds), domainMax = Math.max(maximum, ...bounds);
+    const domainMin = minimum, domainMax = maximum;
     const magnitude = Math.max(Math.abs(domainMin), Math.abs(domainMax)) || 1;
     // A minimum scale margin prevents tiny changes from filling the chart height.
     const lo = domainMin / magnitude, hi = domainMax / magnitude, pad = Math.max((hi - lo) * .16, .05);
@@ -383,14 +384,11 @@
     if (!preview) [...new Set([domainMin, domainMax])].forEach(value => {
       html += '<line class="chartGrid" x1="' + left + '" x2="' + (width - right) + '" y1="' + y(value) + '" y2="' + y(value) + '"/><text translate="no" x="' + (left - 6) + '" y="' + (y(value) + 4) + '" text-anchor="end">' + esc(axisValue(value)) + '</text>';
     });
-    if (!preview) bounds.forEach(value => {
-      html += '<line class="chartReference" x1="' + left + '" x2="' + (width - right) + '" y1="' + y(value) + '" y2="' + y(value) + '"><title>Reference limit: ' + esc(numberFormat.format(value) + ' ' + item.unit) + '</title></line>';
-    });
     if (!item.duplicateDates) {
       let previous = null, path = '';
       for (const row of item.rows) {
         if (row.valueNum === null) { previous = null; continue; }
-        path += (previous ? 'L' : 'M') + x(row.time) + ',' + y(row.valueNum) + ' ';
+        path += (previous && previous.lab === row.lab ? 'L' : 'M') + x(row.time) + ',' + y(row.valueNum) + ' ';
         previous = row;
       }
       html += '<path class="chartLine" d="' + path + '"/>';
@@ -399,8 +397,8 @@
       html += '<circle class="chartPoint" cx="' + x(row.time) + '" cy="' + y(row.valueNum) + '" r="' + (preview ? 2 : 3) + '"/>';
     });
     if (preview) { svg.innerHTML = html; return; }
-    html += '<text x="' + left + '" y="174" text-anchor="start">' + displayDate(dates[0]) + '</text>';
-    if (start !== end) html += '<text x="' + (width - right) + '" y="174" text-anchor="end">' + displayDate(dates.at(-1)) + '</text>';
+    html += '<text x="' + left + '" y="232" text-anchor="start">' + displayDate(dates[0]) + '</text>';
+    if (start !== end) html += '<text x="' + (width - right) + '" y="232" text-anchor="end">' + displayDate(dates.at(-1)) + '</text>';
     html += '<g class="valueLabels"></g><line class="chartGuide" y1="' + top + '" y2="' + bottom + '" visibility="hidden"/><circle class="chartSelected" r="5" visibility="hidden"/>';
     svg.innerHTML = html;
     const occupied = [...svg.querySelectorAll('text')].map(label => label.getBBox());
@@ -421,7 +419,7 @@
         const box = label.getBBox();
         const overlaps = occupied.some(other => box.x < other.x + other.width + 5 && box.x + box.width + 5 > other.x && box.y < other.y + other.height + 5 && box.y + box.height + 5 > other.y);
         const coversPoint = rows.some(point => x(point.time) > box.x - 5 && x(point.time) < box.x + box.width + 5 && y(point.valueNum) > box.y - 5 && y(point.valueNum) < box.y + box.height + 5);
-        if (box.x >= 0 && box.x + box.width <= width && box.y >= 0 && box.y + box.height < 151 && !overlaps && !coversPoint) {
+        if (box.x >= 0 && box.x + box.width <= width && box.y >= 0 && box.y + box.height < 210 && !overlaps && !coversPoint) {
           occupied.push(box); placed = true; labelsPlaced++; break;
         }
       }
@@ -445,8 +443,7 @@
       const index = event.key === 'Home' ? 0 : event.key === 'End' ? rows.length - 1 : current === -1 ? (event.key === 'ArrowLeft' ? rows.length - 1 : 0) : Math.max(0, Math.min(rows.length - 1, current + (event.key === 'ArrowRight' ? 1 : -1)));
       show(rows[index]);
     };
-    const selected = rows.find(row => row.index === selectedPoints.get(item.id));
-    if (selected) show(selected);
+    show(rows.find(row => row.index === selectedPoints.get(item.id)) || rows.at(-1));
   }
 
   ui.importButton.onclick = ui.startButton.onclick = () => ui.csvFile.click();
